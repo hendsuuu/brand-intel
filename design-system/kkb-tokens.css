@@ -1,0 +1,57 @@
+/* =====================================================================
+   Kura Kura Bali — Design tokens  (kkb-tokens.css)
+   Brand source: kurakurabali.com · extracted for the Brand Intel dashboard, 18 Nov 2026.
+   Include this file first, then kkb-ui.css.
+   Dark mode: follows the OS automatically; force it with <html data-theme="dark">
+   (or data-theme="light").
+   ===================================================================== */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+/* ============ Tokens ============ */
+/* Brand: Kura Kura Bali (kurakurabali.com) — deep green #2b512b, sage #acc29b, sand #cfcabe,
+   cream #f2ecdb, near-black #111. UI font: Plus Jakarta Sans (clean, screen-first, tabular figures).
+   Chart hues are Bali-toned and validated for colour-blind separation in both modes. */
+:root{
+  color-scheme:light;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --bg:#f7f6f2;--surface:#ffffff;--surface-2:#f4f2ec;--surface-3:#e9e5da;
+  --border:rgba(17,17,17,.08);--border-strong:#dedad0;
+  --ink:#111111;--ink-2:#4a4a4a;--muted:#6e6e6e;
+  --accent:#2b512b;--accent-ink:#ffffff;--accent-soft:#e8efe2;--accent-tint:#f5f8f1;--sage:#acc29b;--sand:#cfcabe;--focus:#257f87;
+  --grid:#ebe8e0;--axis:#cfcabe;
+  --pos:#2f78b0;--neu:#b8b1a1;--neg:#d0643a;
+  --s1:#2f78b0;--s2:#d0643a;--s3:#1d9a8c;--s4:#9a5fb5;
+  --good:#2e8b3e;--warning:#e0a21b;--serious:#d0643a;--critical:#c43c32;
+  --up-text:#2b6b2f;--up-bg:#e5f0df;--down-text:#b0442a;--down-bg:#fbe9e2;
+  --shadow:0 1px 2px rgba(17,17,17,.04);
+  --shadow-pop:0 16px 40px rgba(17,17,17,.14),0 2px 6px rgba(17,17,17,.06);
+  --r:16px;--r-sm:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme:dark;
+    --bg:#0e120e;--surface:#151b15;--surface-2:#1c241c;--surface-3:#253025;
+    --border:rgba(255,255,255,.09);--border-strong:#2f3a2f;
+    --ink:#f1efe8;--ink-2:#c8c4b8;--muted:#9b978b;
+    --accent:#acc29b;--accent-ink:#10170f;--accent-soft:#223322;--accent-tint:#18221a;--sage:#acc29b;--sand:#6f6a5f;--focus:#4fb3bc;
+    --grid:#232c23;--axis:#3a463a;
+    --pos:#4489c2;--neu:#6f6a5f;--neg:#d36c42;
+    --s1:#4489c2;--s2:#d36c42;--s3:#20a090;--s4:#a874c6;
+    --good:#5fb36a;--warning:#e8b23a;--serious:#e07a4f;--critical:#e06a5f;
+    --up-text:#9fd18b;--up-bg:#1f3320;--down-text:#f39270;--down-bg:#3a221a;
+    --shadow:none;--shadow-pop:0 16px 40px rgba(0,0,0,.55);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e120e;--surface:#151b15;--surface-2:#1c241c;--surface-3:#253025;
+  --border:rgba(255,255,255,.09);--border-strong:#2f3a2f;
+  --ink:#f1efe8;--ink-2:#c8c4b8;--muted:#9b978b;
+  --accent:#acc29b;--accent-ink:#10170f;--accent-soft:#223322;--accent-tint:#18221a;--sage:#acc29b;--sand:#6f6a5f;--focus:#4fb3bc;
+  --grid:#232c23;--axis:#3a463a;
+  --pos:#4489c2;--neu:#6f6a5f;--neg:#d36c42;
+  --s1:#4489c2;--s2:#d36c42;--s3:#20a090;--s4:#a874c6;
+  --good:#5fb36a;--warning:#e8b23a;--serious:#e07a4f;--critical:#e06a5f;
+  --up-text:#9fd18b;--up-bg:#1f3320;--down-text:#f39270;--down-bg:#3a221a;
+  --shadow:none;--shadow-pop:0 16px 40px rgba(0,0,0,.55);
+}

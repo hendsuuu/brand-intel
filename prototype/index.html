@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kura Kura Bali Brand Intel</title>
+<meta name="description" content="Brand monitoring and communications workspace prototype for Kura Kura Bali.">
+<link rel="icon" href="assets/kkb-icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="styles.css?v=36">
+<script>
+  /* Apply the saved theme before first paint to avoid a flash. */
+  try { const th = JSON.parse(localStorage.getItem("bi.theme")); if (th) document.documentElement.dataset.theme = th; } catch {}
+</script>
+</head>
+<body>
+<a href="#content" class="sr-only">Skip to content</a>
+<div class="shell">
+  <aside class="side" id="side"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <main class="content" id="content" tabindex="-1"></main>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-t" aria-hidden="true"></aside>
+<div class="palette" id="palette" role="dialog" aria-modal="true" aria-label="Command palette"></div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div id="tip" role="tooltip"></div>
+<script src="i18n.js?v=36"></script>
+<script src="data.js?v=36"></script>
+<script src="charts.js?v=36"></script>
+<script src="app.js?v=36"></script>
+</body>
+</html>

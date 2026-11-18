@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kura Kura Bali Design System</title>
+<link rel="icon" href="assets/kkb-icon-192.png">
+<link rel="stylesheet" href="kkb-tokens.css">
+<link rel="stylesheet" href="kkb-ui.css">
+<style>
+  /* preview-only helpers */
+  .ds{max-width:1100px;margin:0 auto;padding:32px 24px 64px}
+  .ds section{margin-top:36px}
+  .ds .eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .sw div{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .sw i{display:block;height:56px}
+  .sw p{padding:8px 10px;font-size:12px}
+  .sw b{display:block;font-size:12px}
+  pre{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px;overflow:auto;font-size:12px;margin:10px 0 0}
+</style>
+</head>
+<body>
+<div class="ds">
+  <div class="row wrap" style="gap:16px;align-items:center">
+    <img src="assets/kkb-logo.png" alt="Kura Kura Bali" style="height:72px">
+    <div style="flex:1;min-width:220px"><h1>Kura Kura Bali · Design System</h1><p class="ink2" style="margin-top:4px">Tokens + components from the Brand Intel dashboard. Font: Plus Jakarta Sans.</p></div>
+    <button class="btn" id="theme">Toggle dark mode</button>
+  </div>
+
+  <section><div class="eyebrow">Brand colours</div>
+    <div class="sw" id="brand-sw"></div></section>
+
+  <section><div class="eyebrow">Chart & status colours</div>
+    <div class="sw" id="chart-sw"></div></section>
+
+  <section><div class="eyebrow">Typography</div>
+    <div class="card"><div class="card-body stack" style="gap:10px">
+      <h1>Page title · 24/800</h1><h2>Card title · 15/700</h2><p>Body text · 14/400. Clean, readable, and calm; hierarchy comes from weight and colour, not from more text.</p>
+      <p class="ink2">Secondary text (--ink-2)</p><p class="muted small">Muted caption (--muted)</p>
+      <div class="kpi" style="padding:0"><div class="label">KPI label · 11/700 caps</div><div class="value">12,480</div></div>
+    </div></div></section>
+
+  <section><div class="eyebrow">Buttons & controls</div>
+    <div class="card"><div class="card-body stack">
+      <div class="row wrap"><button class="btn primary">Primary</button><button class="btn">Secondary</button><button class="btn ghost">Ghost</button><button class="btn danger">Danger</button><button class="btn sm">Small</button><button class="btn" disabled>Disabled</button></div>
+      <div class="row wrap"><div class="seg"><button aria-pressed="false">7D</button><button aria-pressed="true">30D</button><button aria-pressed="false">90D</button></div>
+        <button class="chip" aria-pressed="true">Positive</button><button class="chip" aria-pressed="false">Neutral</button>
+        <label class="switch"><input type="checkbox" checked aria-label="Toggle"><span></span></label></div>
+      <div class="grid g2"><div class="field"><label for="a">Label</label><input id="a" class="input" placeholder="Placeholder"><span class="help">Helper text</span></div>
+        <div class="field"><label for="b">Select</label><select id="b" class="select"><option>Option</option></select></div></div>
+      <div class="tabs" role="tablist"><button role="tab" aria-selected="true">Engagement</button><button role="tab" aria-selected="false">Sentiment</button><button role="tab" aria-selected="false">Topics</button></div>
+    </div></div>
+<pre>&lt;button class="btn primary"&gt;Primary&lt;/button&gt;
+&lt;div class="seg"&gt;&lt;button aria-pressed="true"&gt;30D&lt;/button&gt;…&lt;/div&gt;
+&lt;div class="field"&gt;&lt;label for="x"&gt;Label&lt;/label&gt;&lt;input id="x" class="input"&gt;&lt;span class="help"&gt;Help&lt;/span&gt;&lt;/div&gt;</pre></section>
+
+  <section><div class="eyebrow">KPI cards</div>
+    <div class="grid g4">
+      <div class="card kpi"><div class="label">Mentions</div><div class="value">178</div><div class="delta"><span class="up">▲ +37%</span> vs previous period</div></div>
+      <div class="card kpi"><div class="label">Estimated reach</div><div class="value">360.1k</div><div class="delta"><span class="up">▲ +89%</span> vs previous period</div></div>
+      <div class="card kpi"><div class="label">Engagement rate</div><div class="value">1.8%</div><div class="delta"><span class="down">▼ −14%</span> vs previous period</div></div>
+      <div class="card kpi"><div class="label">Presence score</div><div class="value">26<span class="muted" style="font-size:16px;font-weight:500">/100</span></div><div class="delta"><span class="up">▲ +6 pts</span> vs previous period</div></div>
+    </div>
+<pre>&lt;div class="card kpi"&gt;&lt;div class="label"&gt;Mentions&lt;/div&gt;&lt;div class="value"&gt;178&lt;/div&gt;
+  &lt;div class="delta"&gt;&lt;span class="up"&gt;▲ +37%&lt;/span&gt; vs previous period&lt;/div&gt;&lt;/div&gt;</pre></section>
+
+  <section><div class="eyebrow">AI card</div>
+    <section class="card ai-card"><div class="card-head"><span class="ai-badge">AI</span><h2>AI daily brief</h2></div>
+      <div class="card-body"><ul class="ai-list"><li>Mentions are up 37% over the last 30 days.</li><li><b>KEK &amp; investment</b> leads the conversation.</li><li>Highest-impact mention: <a class="ai-cite" href="#">Kuliner 1 Menit Fanbase</a>.</li></ul>
+      <p class="ai-note">AI · based on 178 mentions · check sources before sharing</p></div></section>
+    <div class="ai-inline" style="margin-top:12px"><span class="ai-badge">AI</span><div><b>Answer the question</b><p class="small ink2">Someone is asking for information. A short reply builds trust.</p></div></div></section>
+
+  <section><div class="eyebrow">Pills, status, scores</div>
+    <div class="card"><div class="card-body row wrap">
+      <span class="pill"><i class="dot" style="background:var(--pos)"></i>Positive</span><span class="pill"><i class="dot" style="background:var(--neu)"></i>Neutral</span><span class="pill"><i class="dot" style="background:var(--neg)"></i>Negative</span><span class="pill plain">Topic</span>
+      <span class="sev critical">● Critical</span><span class="sev warning">● Warning</span><span class="sev good">● OK</span>
+      <span class="score-chip"><span class="sbar"><i style="width:72%"></i></span><b class="num">7.2</b><span class="muted">/10</span></span>
+    </div></div></section>
+
+  <section><div class="eyebrow">Table</div>
+    <div class="card"><div class="card-body flush scroll-x"><table class="t"><thead><tr><th>Outlet</th><th>Tone</th><th class="r">Articles</th><th class="r">Value</th></tr></thead><tbody>
+      <tr><td><b>Bloomberg Technoz</b></td><td><span class="pill"><i class="dot" style="background:var(--pos)"></i>Positive</span></td><td class="r num">4</td><td class="r num">IDR 100m</td></tr>
+      <tr><td><b>The Jakarta Post</b></td><td><span class="pill"><i class="dot" style="background:var(--pos)"></i>Positive</span></td><td class="r num">2</td><td class="r num">IDR 70m</td></tr>
+      <tr><td><b>VOI</b></td><td><span class="pill"><i class="dot" style="background:var(--neu)"></i>Neutral</span></td><td class="r num">6</td><td class="r num">IDR 55.2m</td></tr>
+    </tbody></table></div></div></section>
+
+  <section><div class="eyebrow">Attention list & empty state</div>
+    <div class="grid g2">
+      <section class="card"><div class="attn calm"><span class="ic">✓</span><div><b>2 drafts ready</b><p class="small ink2">Review and schedule them.</p><div class="acts"><a class="btn sm primary" href="#">Open</a><a class="btn sm" href="#">Later</a></div></div></div>
+        <div class="attn critical"><span class="ic">!</span><div><b>A scheduled post failed</b><p class="small ink2">Reconnect the account, then retry.</p></div></div></section>
+      <section class="card"><div class="empty"><b>Nothing here yet</b><p>Explain the next step in one line.</p></div><div class="card-body"><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:60%"></div></div></section>
+    </div></section>
+
+  <section><div class="eyebrow">Brand marks</div>
+    <div class="card"><div class="card-body row wrap" style="gap:16px">
+      <span class="brand-mark logo"><img src="assets/kkb-icon-192.png" alt=""></span>
+      <span class="brand-mark">KK</span><span class="brand-mark sm">KB</span>
+      <span class="small muted">.brand-mark.logo (white tile) · .brand-mark (initials) · .brand-mark.sm</span>
+    </div></div></section>
+</div>
+<div class="toasts"><div class="toast"><span>Saved as “Draft”</span><button>Undo</button></div></div>
+<script>
+  const sw = (id, list) => document.getElementById(id).innerHTML = list.map(([v, n, use]) =>
+    `<div><i style="background:var(${v})"></i><p><b>${n}</b><code>${v}</code><br><span class="muted">${use}</span></p></div>`).join("");
+  sw("brand-sw", [["--accent", "Deep green", "Primary, active"], ["--accent-soft", "Soft green", "Selected bg"], ["--accent-tint", "Green tint", "AI / highlight bg"], ["--sage", "Sage", "Secondary accent"],
+    ["--sand", "Sand", "Axes, neutral"], ["--bg", "Page", "Background"], ["--surface", "Surface", "Cards"], ["--surface-3", "Cream", "Hover, chips"], ["--ink", "Ink", "Text"], ["--muted", "Muted", "Labels"]]);
+  sw("chart-sw", [["--s1", "Blue · s1/pos", "Positive"], ["--s2", "Terracotta · s2/neg", "Negative"], ["--s3", "Teal · s3", "Series 3"], ["--s4", "Plum · s4", "Series 4"], ["--neu", "Sand · neu", "Neutral"],
+    ["--good", "Good", "Status"], ["--warning", "Warning", "Status"], ["--critical", "Critical", "Status"]]);
+  document.getElementById("theme").onclick = () => { const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; r.dataset.theme = dark ? "light" : "dark"; };
+</script>
+</body>
+</html>
