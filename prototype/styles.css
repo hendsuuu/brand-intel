@@ -483,3 +483,21 @@ table.t{width:100%;border-collapse:collapse}
 .ag-side{position:sticky;top:76px}
 .ag-side #ag-cap{resize:vertical;font-size:13px;line-height:1.5}
 @media (max-width:900px){.ag-side{position:static}.ag-chat{min-height:0}.ag-log{max-height:none;min-height:300px}}
+/* Photo posters (@in.kurakurabali style): poster + colour block */
+.cr-pz{position:absolute;inset:0;color:#fff;background:#2b512b}
+.cr-pimg{background:#3d6b3a}
+.cr-pz>svg,.cr-pimg>svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cr-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.cr-pshade{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.35),rgba(0,0,0,0) 26%,rgba(0,0,0,0) 45%,rgba(0,0,0,.68))}
+.cr-ptop{position:absolute;top:5cqw;left:0;right:0;display:flex;justify-content:center;z-index:1}
+.cr-plogo{width:15cqw;filter:brightness(0) invert(1) drop-shadow(0 1px 6px rgba(0,0,0,.3))}
+.cr-ptext{position:absolute;left:7cqw;right:7cqw;bottom:8cqw;display:flex;flex-direction:column;gap:2.5cqw}
+.cr-pserif{font-family:"Cormorant Garamond",Georgia,serif;font-weight:500;text-transform:uppercase;font-size:10cqw;line-height:.95;letter-spacing:.005em;text-wrap:balance}
+.cr-psub{font-size:3.6cqw;line-height:1.35;font-weight:500;opacity:.92;text-wrap:balance}
+.cr-pz.block{display:flex;flex-direction:column;background:#2b512b}
+.cr-pblock{position:relative;padding:5cqw 7cqw 6cqw;display:flex;flex-direction:column;gap:2cqw;background:#2b512b}
+.cr-pblock .cr-plogo{width:12cqw;margin-bottom:2cqw}
+.cr-plabel{font-family:"Cormorant Garamond",Georgia,serif;font-size:5cqw;font-style:italic;font-weight:500;color:#f2ecdb}
+.cr-pblock .cr-pserif{font-size:9cqw}
+.cr-pimg{position:relative;flex:1;min-height:0}
+.cr-pz.block .cr-ptop{position:absolute}

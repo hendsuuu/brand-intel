@@ -1316,14 +1316,16 @@ const CR_HL = {
     outlet: ["Sira Village Grand Outlet", "Shop the coast", "Your weekend at Sira Village", "Retail, island style"],
     turtle: ["Home of the turtles", "Protecting Serangan's coast", "Every hatchling counts", "Kura Kura means turtle"],
     campus: ["Learn and grow on Serangan", "Bali's new economic zone", "Built for what's next", "Where business meets the coast"],
-    coast: ["Where the coast comes alive", "Slow mornings on Serangan", "See you at Kura Kura Bali", "A new coastal destination"]
+    coast: ["Where the coast comes alive", "Slow mornings on Serangan", "See you at Kura Kura Bali", "A new coastal destination"],
+    culture: ["The meaning of canang", "Everyday Balinese aesthetics", "Traditions, up close", "Book talk & canang workshop"]
   },
   id: {
     fashion: ["Fashion week di tepi laut", "Rangkuman Labdanation Fashion Week", "Gaya bertemu pesisir", "Barisan depan di Serangan"],
     outlet: ["Sira Village Grand Outlet", "Belanja di tepi pantai", "Akhir pekan di Sira Village", "Belanja ala pulau"],
     turtle: ["Rumah para penyu", "Menjaga pesisir Serangan", "Setiap tukik berarti", "Kura Kura artinya penyu"],
     campus: ["Belajar dan tumbuh di Serangan", "Kawasan ekonomi baru Bali", "Dibangun untuk masa depan", "Bisnis bertemu pesisir"],
-    coast: ["Pesisir yang hidup", "Pagi santai di Serangan", "Sampai jumpa di Kura Kura Bali", "Destinasi pesisir baru"]
+    coast: ["Pesisir yang hidup", "Pagi santai di Serangan", "Sampai jumpa di Kura Kura Bali", "Destinasi pesisir baru"],
+    culture: ["Makna di balik canang", "Estetika keseharian Bali", "Tradisi dari dekat", "Bincang buku & workshop canang"]
   }
 };
 const crSubject = b => { b = (b || "").toLowerCase();
@@ -1401,7 +1403,21 @@ function crArt(r, subjectOverride, uid) {
   return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${defs}${s}</svg>`;
 }
 /* Frame = scene + brand overlay (headline + logo) as HTML, so text uses the brand font. */
+/* Real-photo posters in the @in.kurakurabali style: full-bleed photo, logo on top, large serif
+   headline (poster) or a brand-colour block above the photo (block). Demo photos are
+   free Unsplash stock; production uses the approved brand photo library. While a photo loads (or
+   if it fails) the frame shows the brand green. */
+const CR_PHOTO = id => `https://images.unsplash.com/photo-${id}?w=800&q=70&auto=format&fit=crop`;
+function crPoster(r, uid) {
+  const lay = ["poster", "block"][r.variant % 2], hl = esc(r.headline || ""), sub = esc(r.sub || "");
+  const img = `<img class="cr-photo" src="${CR_PHOTO(r.photo)}" alt="" loading="lazy" onerror="this.remove()">`;
+  const logo = r.logo ? `<img class="cr-plogo" src="assets/kkb-logo.png" alt="">` : "";
+  const text = r.text && hl;
+  if (lay === "block") return `<div class="cr-pz block">${text ? `<div class="cr-pblock">${logo}<i class="cr-plabel">${esc(r.label || "")}</i><b class="cr-pserif">${hl}</b>${sub ? `<span class="cr-psub">${sub}</span>` : ""}</div>` : `<div class="cr-ptop">${logo}</div>`}<div class="cr-pimg">${img}</div></div>`;
+  return `<div class="cr-pz poster">${img}<i class="cr-pshade"></i><div class="cr-ptop">${logo}</div>${text ? `<div class="cr-ptext"><b class="cr-pserif">${hl}</b>${sub ? `<span class="cr-psub">${sub}</span>` : ""}</div>` : ""}</div>`;
+}
 function crFrame(r, { big = false, uid = "" } = {}) {
+  if (r.photo) return `<div class="cr-frame ${big ? "big" : ""}" style="aspect-ratio:${r.fmt.replace(":", "/")}" role="img" aria-label="${esc(r.headline || t("cr.visual"))}">${crPoster(r, uid)}</div>`;
   const light = r.style !== "graphic" || r.variant % 4 === 0;
   return `<div class="cr-frame ${big ? "big" : ""}" style="aspect-ratio:${r.fmt.replace(":", "/")}" role="img" aria-label="${esc(r.headline || t("cr.visual"))}">
     ${crArt(r, null, r.id + uid)}${r.text && r.headline ? `<div class="cr-ov ${light ? "light" : "dark"}">${light ? '<i class="cr-scrim"></i>' : ""}<b class="cr-hl">${esc(r.headline)}</b></div>` : ""}${r.logo ? `<img class="cr-logo ${light ? "white" : ""}" src="assets/kkb-logo.png" alt="">` : ""}</div>`;
@@ -1411,10 +1427,10 @@ function crChecks(r) {
   out.push(r.logo ? { lv: "ok", t: t("cr.chk.logo"), d: t("cr.chk.logo.ok") } : { lv: "warn", t: t("cr.chk.logo"), d: t("cr.chk.logo.off") });
   out.push({ lv: ban.length ? "bad" : "ok", t: t("chk.claims"), d: ban.length ? t("chk.claims.bad", { w: ban.map(b => `“${b}”`).join(", ") }) : t("chk.claims.ok") });
   out.push(r.text && r.headline.length > 34 ? { lv: "warn", t: t("cr.chk.text"), d: t("cr.chk.text.long", { n: r.headline.length }) } : { lv: "ok", t: t("cr.chk.text"), d: t("cr.chk.text.ok") });
-  out.push(r.style !== "graphic" && r.variant % 4 === 2 ? { lv: "warn", t: t("cr.chk.colour"), d: t("cr.chk.colour.dusk") } : { lv: "ok", t: t("cr.chk.colour"), d: t("cr.chk.colour.ok") });
+  out.push(!r.photo && r.style !== "graphic" && r.variant % 4 === 2 ? { lv: "warn", t: t("cr.chk.colour"), d: t("cr.chk.colour.dusk") } : { lv: "ok", t: t("cr.chk.colour"), d: t("cr.chk.colour.ok") });
   out.push({ lv: "ok", t: t("cr.chk.fit"), d: t("cr.fit." + r.fmt.replace(":", "x")) });
-  out.push(r.library ? { lv: "ok", t: t("cr.chk.source"), d: t("cr.chk.source.lib") } : { lv: "warn", t: t("cr.chk.source"), d: t("cr.chk.source.gen") });
-  if (r.style === "photo") out.push({ lv: "ok", t: t("cr.chk.ai"), d: t("cr.chk.ai.d") });
+  out.push(r.photo ? { lv: "warn", t: t("cr.chk.source"), d: t("cr.chk.source.stock") } : r.library ? { lv: "ok", t: t("cr.chk.source"), d: t("cr.chk.source.lib") } : { lv: "warn", t: t("cr.chk.source"), d: t("cr.chk.source.gen") });
+  if (r.style === "photo" && !r.photo) out.push({ lv: "ok", t: t("cr.chk.ai"), d: t("cr.chk.ai.d") });
   const score = Math.max(0, 100 - out.filter(c => c.lv === "bad").length * 25 - out.filter(c => c.lv === "warn").length * 10);
   return { out, score };
 }
@@ -1425,8 +1441,17 @@ function crChecks(r) {
    with tools for this dashboard (mentions, insights, brand kit, Planner). */
 S.ag = { msgs: [], slots: {}, draft: null, busy: false, ctx: null, seed: 11, ver: 0 };
 const AG_FMT = { instagram: "4:5", facebook: "1:1", linkedin: "16:9", google: "16:9" };
-const AG_EMO = { fashion: "✨", outlet: "🛍️", turtle: "🐢", campus: "🌱", coast: "🌊" };
-const AG_TAG = { fashion: "#LabdanationFashionWeek", outlet: "#SiraVillage", turtle: "#TurtleConservation", campus: "#Serangan", coast: "#Serangan" };
+const AG_EMO = { fashion: "✨", outlet: "🛍️", turtle: "🐢", campus: "🌱", coast: "🌊", culture: "🌺" };
+const AG_TAG = { fashion: "#LabdanationFashionWeek", outlet: "#SiraVillage", turtle: "#TurtleConservation", campus: "#Serangan", coast: "#Serangan", culture: "#BudayaBali" };
+/* Free Unsplash photos picked to match the @in.kurakurabali feed (documentary, warm, natural light). */
+const AG_PHOTOS = {
+  turtle: ["1607896477672-21ffa8e2b36e", "1592669169929-07887a3ee649", "1735767651924-b5b0bc546643"],
+  coast: ["1561009226-7a820d647a40", "1552272492-3053fbacbf4b", "1691945686257-c22b00463104"],
+  culture: ["1767502597098-6bbefa312095", "1785645739648-2a83fffddd54", "1741272689174-f7f03b09a0ab"],
+  fashion: ["1543728069-a3f97c5a2f32", "1784850350614-5e737b4648ca", "1784850126110-ab8d5106d50b"],
+  outlet: ["1761442664224-bcc947600fe1", "1741482529066-66878ff835c5", "1778054653797-9d4651b6a5be"],
+  campus: ["1774094453087-0207a0cd2309", "1772690445981-78b22eacda4b", "1769798643655-e0f10f62c3fd"]
+};
 const AG_COPY = {
   en: {
     fashion: ["Front row, by the sea.", "{b} hosted Labdanation Fashion Week on Serangan: local designers, coastal light and a runway that ended at the water.", "Swipe for the looks and tell us your favourite."],
@@ -1434,6 +1459,7 @@ const AG_COPY = {
     turtle: ["Every hatchling counts.", "Our conservation team released new hatchlings on Serangan this week, part of our long-term work to protect the coast.", "Ask us how you can join the next release."],
     campus: ["Built for what's next.", "{b} is growing into a new place to learn, work and invest in Bali, right on the coast.", "Find out more at the link in bio."],
     coast: ["Slow mornings on Serangan.", "Sea air, open space and a coast that's coming alive at {b}.", "Plan your visit."],
+    culture: ["Every canang tells a story.", "Join us at Sira Village to learn the meaning behind Bali's daily offerings, from the palm leaf to the flowers.", "Save the date and bring a friend."],
     formal: "More information is available at the link in our bio."
   },
   id: {
@@ -1442,6 +1468,7 @@ const AG_COPY = {
     turtle: ["Setiap tukik berarti.", "Tim konservasi kami melepas tukik baru di Serangan minggu ini, bagian dari upaya jangka panjang menjaga pesisir.", "Tanyakan cara ikut pelepasan berikutnya."],
     campus: ["Dibangun untuk masa depan.", "{b} tumbuh menjadi tempat baru untuk belajar, bekerja, dan berinvestasi di Bali, tepat di tepi pantai.", "Info lengkap ada di tautan di bio."],
     coast: ["Pagi santai di Serangan.", "Udara laut, ruang terbuka, dan pesisir yang mulai hidup di {b}.", "Rencanakan kunjunganmu."],
+    culture: ["Setiap canang punya cerita.", "Mari ke Sira Village untuk mengenal makna persembahan harian Bali, dari janur sampai bunganya.", "Catat tanggalnya dan ajak temanmu."],
     formal: "Informasi lengkap tersedia di tautan pada bio kami."
   }
 };
@@ -1454,13 +1481,13 @@ function agDetect(text) {
   else if (/santai|casual|warm|hangat|fun|ramah|friendly/.test(s)) o.tone = "warm";
   else if (/netral|neutral/.test(s)) o.tone = "neutral";
   if (/english|inggris|\ben\b/.test(s)) o.lang = "en";
-  else if (/bahasa indonesia|\bindonesia\b|\bid\b/.test(s)) o.lang = "id";
+  else if (/bahasa indonesia|\bindonesian?\b|\bid\b/.test(s)) o.lang = "id";
   if (/\b(short|shorter)\b|pendek|singkat|ringkas/.test(s)) o.short = true;
   if (/\b(long|longer|more detail)\b|panjang|lebih detail/.test(s)) o.short = false;
   if (/(no|without|remove) (visual|image|picture|photo)|tanpa (gambar|visual|foto)|hapus (gambar|visual)/.test(s)) o.visual = false;
   else if (/visual|image|picture|photo|gambar|foto/.test(s)) o.newVisual = true;
   if (/(no|without) emoji|tanpa emoji/.test(s)) o.emoji = false;
-  const sub = /special economic zone|kawasan ekonomi/.test(s) ? "campus" : /sira village|promo|diskon|discount/.test(s) && !/fashion/.test(s) ? "outlet" : crSubject(s);
+  const sub = /canang|offering|sesajen|persembahan|budaya|culture|cultural|tari|dance|ceremony|upacara|balinese tradition|tradisi/.test(s) ? "culture" : /special economic zone|kawasan ekonomi/.test(s) ? "campus" : /sira village|promo|diskon|discount/.test(s) && !/fashion/.test(s) ? "outlet" : crSubject(s);
   if (sub !== "coast" || /coast|pesisir|pantai|beach/.test(s)) o.subject = sub;
   return o;
 }
@@ -1479,8 +1506,8 @@ function agCaption(d) {
 }
 function agVisual(d, fresh) {
   const c = S.ag; if (fresh || !d.visual) c.seed += 7;
-  const hs = CR_HL[d.lang][d.subject];
-  return { id: "ag" + c.seed, fmt: AG_FMT[d.channel] || "4:5", style: ["photo", "editorial", "photo", "illustration"][c.seed % 4], subject: d.subject, logo: true, text: true, library: true,
+  const hs = CR_HL[d.lang][d.subject], pool = AG_PHOTOS[d.subject], body = AG_COPY[d.lang][d.subject][1].replace("{b}", D.project.name);
+  return { id: "ag" + c.seed, photo: pool[c.seed % pool.length], sub: body.split(/[:,.]/)[0], label: t("ag.label." + d.subject), fmt: AG_FMT[d.channel] || "4:5", style: ["photo", "editorial", "photo", "illustration"][c.seed % 4], subject: d.subject, logo: true, text: true, library: true,
     variant: c.seed % 4, seed: c.seed * 31, headline: hs[c.seed % 4], brief: d.brief, lang: d.lang };
 }
 function agNextSlot(t0) {
@@ -1552,7 +1579,7 @@ function agMsgHTML(m, i, last) {
 }
 V.create = {
   html() {
-    const c = S.ag, d = c.draft, starters = ["ag.s1", "ag.s2", "ag.s3", "ag.s4"];
+    const c = S.ag, d = c.draft, starters = ["ag.s1", "ag.s2", "ag.s3", "ag.s4", "ag.s5"];
     const log = c.msgs.length ? c.msgs.map((m, i) => agMsgHTML(m, i, i === c.msgs.length - 1)).join("")
       : `<div class="empty" style="padding:28px 8px">${ic("sparkles")}<b>${t("ag.empty")}</b><p>${t("ag.empty.b")}</p><div class="row wrap" style="gap:6px;justify-content:center;margin-top:12px">${starters.map(k => `<button class="chip" data-agq="${esc(t(k))}">${t(k)}</button>`).join("")}</div></div>`;
     const typing = c.busy ? `<div class="msg ai"><span class="ai-badge">${ic("sparkles")}AI</span><div class="small muted">${t("ag.thinking")}</div></div>` : "";
@@ -1567,7 +1594,7 @@ V.create = {
       ${c.ctx ? `<section class="card"><div class="card-body row" style="align-items:flex-start">${ic("link")}<div style="flex:1;min-width:0"><b class="small">${t("cr.context")}</b><p class="small ink2" style="margin-top:2px">${esc(c.ctx)}</p></div></div></section>` : ""}
       <section class="card ag-chat"><div id="ag-log" class="ag-log" aria-live="polite">${log}${typing}</div>
         <div class="ag-input"><label class="sr-only" for="ag-in">${t("ag.ph")}</label><textarea id="ag-in" class="input" rows="1" placeholder="${esc(t("ag.ph"))}" ${c.busy ? "disabled" : ""}></textarea><button class="btn primary" id="ag-go" ${c.busy ? "disabled" : ""}>${ic("send")}<span class="hide-sm">${t("ai.send")}</span></button></div>
-        <p class="ai-note" style="margin:0 14px 12px">${t("ag.note")}</p></section></div>
+        <p class="ai-note" style="margin:0 14px 12px">${t("ag.note")} ${t("ag.photoNote")}</p></section></div>
       <aside class="stack ag-side">${side}
         <section class="card"><div class="card-head"><h2>${t("ag.knows")}</h2></div><div class="card-body stack small" style="gap:8px">
           <div class="row">${ic("check")}<span>${t("ag.k.kit")}</span></div><div class="row">${ic("check")}<span>${t("ag.k.banned", { n: D.settings.banned.length })}</span></div>
