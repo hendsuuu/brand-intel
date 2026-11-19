@@ -335,6 +335,10 @@ function filtersHTML() {
       ${sm ? `<p class="help" style="margin-top:6px">${sm.concepts.length ? t("mf.smartMatched") + " " + sm.concepts.map(c => `<span class="pill plain">${t("concept." + c)}</span>`).join(" ") : t("mf.smartNone")}</p>` : `<p class="help" style="margin-top:6px">${t("mf.smartH")}</p>`}</div>
   </div>`;
 }
+/* Translation: each mention carries its text in the other language (id <-> en). Production
+   translates on ingest with the glossary, so brand names and place names stay as they are. */
+const trTo = x => (x.lang === "id" ? "en" : "id");
+const mShowTr = x => S.m.tr && S.m.tr !== x.lang && x.translation;
 V.mentions = {
   html() {
     return head(t("nav.mentions"), t("mentions.desc"), `<button class="btn" data-aisum="1">${ic("sparkles")}${t("ai.summarize")}</button><button class="btn" data-act="markAllVisited">${ic("check")}${t("mf.markAll")}</button><button class="btn" data-act="export">${ic("download")}${t("act.export")}</button>`) +
@@ -344,6 +348,7 @@ V.mentions = {
             <label class="sr-only" for="m-q">${t("common.search")}</label>
             <input id="m-q" class="input" type="search" placeholder="${t("mentions.searchPh")}" value="${esc(S.m.search)}" style="flex:1;min-width:180px">
             <select class="select" id="m-sort" aria-label="${t("common.sort")}">${["new", "impact", "inter", "reach"].map(k => `<option value="${k}" ${S.m.sort === k ? "selected" : ""}>${t("sort." + k)}</option>`).join("")}</select>
+            <div class="seg" role="group" aria-label="${t("mtr.label")}" title="${esc(t("mtr.label"))}">${["", "en", "id"].map(k => `<button data-mtr="${k}" aria-pressed="${(S.m.tr || "") === k}">${k ? k.toUpperCase() : t("mtr.orig")}</button>`).join("")}</div>
             <button class="btn filters-btn" data-mfopen="1">${ic("search")}${t("mf.title")}<span id="mf-badge"></span></button>
           </div>
           <div id="m-active"></div>
@@ -368,8 +373,8 @@ function renderMList() {
   $("#m-list").innerHTML = L.length ? L.slice(0, m.limit).map(x => { const v = isVisited(x), sc = impact(x);
       return `<div class="m-item ${v ? "" : "unread"}" role="listitem" tabindex="0" data-mid="${x.id}" aria-label="${esc(x.author.name)}${v ? "" : ", " + t("mf.v.not")}">
       ${srcBadge(x.source)}
-      <div class="body"><div class="meta"><b>${esc(x.author.name)}</b><span>${esc(x.author.handle)}</span><span>·</span><span>${ago(x.date)}</span>${x.lang === "id" ? `<span class="lang">ID</span>` : ""}${v ? `<span class="visited-tag">${ic("check")}${t("mf.v.visited")}</span>` : `<span class="new-tag">${t("mf.v.not")}</span>`}</div>
-      <div class="text">${esc(x.text)}</div>
+      <div class="body"><div class="meta"><b>${esc(x.author.name)}</b><span>${esc(x.author.handle)}</span><span>·</span><span>${ago(x.date)}</span>${x.lang === "id" || S.m.tr ? `<span class="lang">${x.lang.toUpperCase()}</span>` : ""}${mShowTr(x) ? `<span class="small muted">${ic("globe")} ${t("mtr.from", { l: x.lang.toUpperCase() })}</span>` : ""}${v ? `<span class="visited-tag">${ic("check")}${t("mf.v.visited")}</span>` : `<span class="new-tag">${t("mf.v.not")}</span>`}</div>
+      <div class="text" lang="${mShowTr(x) ? trTo(x) : x.lang}">${esc(mShowTr(x) ? x.translation : x.text)}</div>
       <div class="row wrap" style="margin-top:6px">${sentPill(x.sentiment)}<span class="pill plain">${t("emo." + x.emotion)}</span>${sc >= IMPORTANT ? `<span class="pill" style="background:var(--accent-soft);color:var(--accent)">${ic("alertc")}${t("mf.imp.important")}</span>` : ""}
         <span class="small muted">${t("common.reach")} ${fN(x.reach)} · ${t("kpi.inter")} ${fN(inter(x))}</span><span class="spacer"></span>
         <span data-tip="${esc(t("score.impact"))}">${scoreChip(sc, 10, t("score.impact"))}</span></div></div></div>`; }).join("") +
@@ -383,8 +388,8 @@ function openMention(id) {
   renderShell();
   const draw = showTr => `<div class="stack">
       <div class="row">${srcBadge(x.source)}<div style="min-width:0;flex:1"><b>${esc(x.author.name)}</b><div class="small muted">${esc(x.author.handle)} · ${fN(x.author.followers)} ${t("common.followers")}</div></div><span class="visited-tag">${ic("check")}${t("mf.v.visited")}</span></div>
-      <div><div class="quote" lang="${showTr ? "en" : x.lang}">${esc(showTr ? x.translation : x.text)}</div>
-        ${x.translation ? `<button class="btn sm ghost" id="mt-tr" style="margin-top:6px">${ic("globe")}${showTr ? t("act.showOriginal") : t("act.showTranslation")}</button>` : ""}</div>
+      <div><div class="quote" lang="${showTr ? trTo(x) : x.lang}">${esc(showTr ? x.translation : x.text)}</div>
+        ${x.translation ? `<div class="row wrap" style="margin-top:6px"><button class="btn sm ghost" id="mt-tr">${ic("globe")}${showTr ? t("act.showOriginal") : t("mtr.to." + trTo(x))}</button>${showTr ? `<span class="small muted">${t("mtr.note", { a: x.lang.toUpperCase(), b: trTo(x).toUpperCase() })}</span>` : ""}</div>` : ""}</div>
       ${(() => { const a = aiAction(x); return `<div class="ai-inline"><span class="ai-badge">${ic("sparkles")}AI</span><div style="flex:1"><b>${t("ai.act." + a.k)}</b><p class="small ink2">${t("ai.act." + a.k + ".d")}</p></div>${a.cta === "reply" ? `<a class="btn sm primary" href="#/studio?tpl=reply&mention=${x.id}" data-close-nav="1">${t("act.draftResponse")}</a>` : a.cta === "post" ? `<a class="btn sm" href="#/studio?tpl=caption&mention=${x.id}" data-close-nav="1">${t("act.draftPost")}</a>` : ""}</div>`; })()}
       <dl class="kv">
         <dt>${t("common.sentiment")}</dt><dd><div class="row wrap">${sentPill(x.sentiment)}<span class="small muted">${t("m.aiSent", { c: fP(x.sentConf) })}</span>${infoBtn(t("m.aiSent.i"))}</div></dd>
@@ -397,9 +402,9 @@ function openMention(id) {
         <dt>${t("common.location")}</dt><dd>${esc(x.location)}</dd>
         <dt>${t("common.published")}</dt><dd>${fDT(x.date)}</dd>
       </dl></div>`;
-  openDrawer({ title: t("mf.detail"), body: draw(false),
+  openDrawer({ title: t("mf.detail"), body: draw(!!mShowTr(x)),
     foot: `<a class="btn" href="#" onclick="return false">${ic("external")}${t("act.openOriginal")}</a><span class="spacer"></span><a class="btn primary" href="#/studio?tpl=reply&mention=${x.id}" data-close-nav="1">${ic("pen")}${t("act.draftResponse")}</a>`,
-    mount() { let tr = false; const b = () => { const btn = $("#mt-tr"); if (btn) btn.onclick = () => { tr = !tr; $(".drawer-body").innerHTML = draw(tr); b(); }; }; b(); } });
+    mount() { let tr = !!mShowTr(x); const b = () => { const btn = $("#mt-tr"); if (btn) btn.onclick = () => { tr = !tr; $(".drawer-body").innerHTML = draw(tr); b(); }; }; b(); } });
 }
 
 /* ---------------- INSIGHTS ---------------- */
@@ -841,7 +846,7 @@ V.planner = {
       : emptyState("calendar", t("pl.none"), t("pl.none.b"));
   }
 };
-function composer({ id, date, text, media } = {}) {
+function composer({ id, date, text, media, accounts } = {}) {
   const post = id ? D.posts.find(p => p._id === id) : null;
   if (post && post.kind !== "social") {
     openDrawer({ title: esc(post.summary), body: `<div class="stack"><div class="row wrap"><span class="pill plain">${t("kind." + post.kind)}</span>${statusDot(post.status)}<span class="small muted">${fDT(new Date(post.scheduleDate))}</span></div><p class="ink2">${t("pl.nonSocial")}</p></div>`,
@@ -849,8 +854,8 @@ function composer({ id, date, text, media } = {}) {
     return;
   }
   const editable = !post || ["draft", "in_review", "failed"].includes(post.status);
-  const sel = new Set(post ? post.accountIds : ["acc_ig"]);
-  const d0 = post ? new Date(post.scheduleDate) : date ? new Date(new Date(date).setHours(10, 0, 0, 0)) : new Date(+D.TODAY + 864e5);
+  const sel = new Set(post ? post.accountIds : accounts || ["acc_ig"]);
+  const d0 = post ? new Date(post.scheduleDate) : date ? (accounts ? new Date(date) : new Date(new Date(date).setHours(10, 0, 0, 0))) : new Date(+D.TODAY + 864e5);
   const pad = n => String(n).padStart(2, "0"), localVal = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   let pv = [...sel][0], att = post ? post.media || null : media || null;
   const mediaField = () => att ? `<div class="cr-att">${crFrame(att, { uid: "cp" })}<div style="flex:1;min-width:0"><b class="small">${esc(att.headline)}</b><div class="small muted">${t("cr.kind.image")} · ${att.fmt}</div></div>${editable ? `<button class="btn sm ghost icon" id="cp-rmmedia" aria-label="${t("act.remove")}">${ic("x")}</button>` : ""}</div>`
@@ -893,7 +898,7 @@ function composer({ id, date, text, media } = {}) {
         if (st === "scheduled" && !(dt > D.TODAY)) { $("#cp-date").focus(); return toast(t("pl.v.future")); }
         const body = { accountIds: [...sel], summary: txt, status: st, scheduleDate: dt.toISOString(), type: "post", media: att };
         if (post) { delete post.error; ghl.updatePost(post._id, body); } else ghl.createPost(body);
-        S.pl.month = new Date(dt.getFullYear(), dt.getMonth(), 1); S.pl.prefill = null; S.pl.prefillMedia = null;
+        S.pl.month = new Date(dt.getFullYear(), dt.getMonth(), 1); S.pl.prefill = null; S.pl.prefillMedia = null; S.pl.prefillDate = null; S.pl.prefillAcc = null;
         closeDrawer(); rerender(); toast(t("toast.postSaved", { s: t("pst." + st) }));
       });
       const del = $("#cp-del"); if (del) del.onclick = () => confirmBox(t("pl.delT"), t("pl.delB"), t("act.delete"), () => { D.posts.splice(D.posts.indexOf(post), 1); closeDrawer(); rerender(); toast(t("toast.postDeleted")); }, true);
@@ -1293,13 +1298,12 @@ function openProject(id) {
   if (!same) toast(t("toast.switched", { n: esc(D.project.name) }));
 }
 
-/* ================================================================ AI CONTENT (images) */
+/* ================================================================ CONTENT AGENT (chat + on-brand images) */
 /* Prototype: visuals are drawn as SVG scenes from the brief, so the flow can be clicked through
    without an image model. Production sends the same brief + brand kit to an image model
    and keeps these brand checks on the result. */
 const CR_FMT = ["4:5", "1:1", "9:16", "16:9"];
 const CR_STYLES = ["photo", "editorial", "illustration", "graphic"];
-S.cr = { fmt: "4:5", style: "photo", lang: null, brief: "", headline: "", logo: true, text: true, library: true, ctx: null, results: [], sel: 0, busy: false, seed: 7, lib: [] };
 const CR_PAL = [
   { sky: ["#f3c98f", "#f6e7cc"], sun: "#f7b45c", sea: ["#4a9a93", "#285f5b"], land: "#2b512b", sand: "#e9dcc0", far: "#6f8f6a" },
   { sky: ["#bcdbe0", "#f2ecdb"], sun: "#fff3d1", sea: ["#62adab", "#2f7a7d"], land: "#3d6b3a", sand: "#efe5cf", far: "#8fb08a" },
@@ -1322,7 +1326,6 @@ const CR_HL = {
     coast: ["Pesisir yang hidup", "Pagi santai di Serangan", "Sampai jumpa di Kura Kura Bali", "Destinasi pesisir baru"]
   }
 };
-const crLang = () => S.cr.lang || S.lang;
 const crSubject = b => { b = (b || "").toLowerCase();
   if (/fashion|fesyen|runway|labdanation|model/.test(b)) return "fashion";
   if (/outlet|shop|belanja|retail|award|penghargaan|store|toko/.test(b)) return "outlet";
@@ -1403,17 +1406,6 @@ function crFrame(r, { big = false, uid = "" } = {}) {
   return `<div class="cr-frame ${big ? "big" : ""}" style="aspect-ratio:${r.fmt.replace(":", "/")}" role="img" aria-label="${esc(r.headline || t("cr.visual"))}">
     ${crArt(r, null, r.id + uid)}${r.text && r.headline ? `<div class="cr-ov ${light ? "light" : "dark"}">${light ? '<i class="cr-scrim"></i>' : ""}<b class="cr-hl">${esc(r.headline)}</b></div>` : ""}${r.logo ? `<img class="cr-logo ${light ? "white" : ""}" src="assets/kkb-logo.png" alt="">` : ""}</div>`;
 }
-function crGenerate(fromSel) {
-  const c = S.cr, L = crLang(), brief = c.brief.trim() || t("cr.defBrief"), subject = crSubject(brief), hs = CR_HL[L][subject];
-  const base = fromSel ? c.results[c.sel] : null, n = 4;
-  c.seed += 13;
-  c.results = Array.from({ length: n }, (_, i) => ({
-    id: "c" + c.seed + "_" + i, fmt: c.fmt, style: c.style, subject, logo: c.logo, text: c.text, library: c.library,
-    variant: base ? base.variant : (i + (c.seed % 4)) % 4, seed: c.seed * 31 + i * 7,
-    headline: c.headline.trim() || (base ? base.headline : hs[i % 4]), brief, lang: L
-  }));
-  c.sel = 0;
-}
 function crChecks(r) {
   const out = [], low = r.headline.toLowerCase(), ban = D.settings.banned.filter(b => low.includes(b.toLowerCase()));
   out.push(r.logo ? { lv: "ok", t: t("cr.chk.logo"), d: t("cr.chk.logo.ok") } : { lv: "warn", t: t("cr.chk.logo"), d: t("cr.chk.logo.off") });
@@ -1426,92 +1418,193 @@ function crChecks(r) {
   const score = Math.max(0, 100 - out.filter(c => c.lv === "bad").length * 25 - out.filter(c => c.lv === "warn").length * 10);
   return { out, score };
 }
-function crChecksHTML() {
-  const r = S.cr.results[S.cr.sel];
-  if (!r) return `<p class="small muted">${t("cr.chk.empty")}</p>`;
-  const { out, score } = crChecks(r), col = score >= 85 ? "--good" : score >= 60 ? "--serious" : "--critical", circ = 2 * Math.PI * 22;
-  return `<div class="score" style="margin-bottom:6px"><svg class="ring" viewBox="0 0 56 56" role="img" aria-label="${t("chk.score")}: ${score}/100"><circle cx="28" cy="28" r="22" fill="none" stroke="var(--surface-3)" stroke-width="6"/>
-    <circle cx="28" cy="28" r="22" fill="none" stroke="var(${col})" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(circ * score) / 100} ${circ}" transform="rotate(-90 28 28)"/>
-    <text x="28" y="33" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">${score}</text></svg>
-    <div><b>${score >= 85 ? t("chk.ready") : score >= 60 ? t("chk.almost") : t("chk.needsWork")}</b><p class="small muted">${t("cr.chk.scoreH")}</p></div></div>` +
-    out.map(c => `<div class="check ${c.lv}"><span class="ic">${ic(c.lv === "ok" ? "check" : c.lv === "warn" ? "alertc" : "alert")}</span><div><b>${c.t}</b><p>${esc(c.d)}</p></div></div>`).join("");
-}
-const crToggle = (k, l) => `<label class="cr-tg"><input type="checkbox" data-crt="${k}" ${S.cr[k] ? "checked" : ""}> ${l}</label>`;
-V.create = {
-  html() {
-    const c = S.cr, L = crLang(), r = c.results[c.sel], busy = c.busy, n = 4;
-    const grid = busy ? `<div class="cr-grid" aria-busy="true">${Array.from({ length: n }, () => `<div class="cr-frame skel" style="aspect-ratio:${c.fmt.replace(":", "/")}"></div>`).join("")}</div><p class="small muted" style="margin-top:10px">${ic("sparkles")} ${t("cr.generating")}</p>`
-      : c.results.length ? `<div class="cr-grid">${c.results.map((x, i) => `<button class="cr-item" data-cr="sel:${i}" aria-pressed="${i === c.sel}" aria-label="${t("cr.option", { n: i + 1 })}">${crFrame(x)}</button>`).join("")}</div>`
-      : emptyState("image", t("cr.none"), t("cr.none.b"));
-    const detail = !busy && r ? `<section class="card"><div class="card-head"><h2>${t("cr.selected", { n: c.sel + 1 })}</h2><span class="pill plain">${r.fmt} · ${t("cr.style." + r.style)}</span></div>
-      <div class="card-body"><div class="cr-detail"><div class="cr-player">${crFrame(r, { big: true, uid: "p" })}</div><div class="stack" style="gap:12px">
-        <div class="field"><label for="cr-hl">${t("cr.headline")}</label><input id="cr-hl" class="input" value="${esc(r.headline)}" maxlength="60"><span class="help">${t("cr.headline.h")}</span></div>
-        <div class="row wrap" style="gap:6px">
-          <button class="btn primary" data-cr="planner">${ic("calendar")}${t("cr.toPlanner")}</button>
-          <a class="btn" href="#/studio?tpl=caption&brief=${encodeURIComponent(r.brief)}">${ic("pen")}${t("cr.writeCaption")}</a>
-          <button class="btn" data-cr="more">${ic("refresh")}${t("cr.more")}</button>
-          <button class="btn" data-cr="save">${ic("check")}${t("cr.save")}</button>
-          <button class="btn ghost" data-cr="download">${ic("download")}PNG</button></div>
-      </div></div></div></section>` : "";
-    return head(t("nav.create"), t("create.desc")) + `<div class="studio"><div class="stack">
-      ${c.ctx ? `<section class="card"><div class="card-body row" style="align-items:flex-start">${ic("link")}<div style="flex:1;min-width:0"><b class="small">${t("cr.context")}</b><p class="small ink2" style="margin-top:2px">${esc(c.ctx)}</p></div><button class="btn sm ghost" data-cr="clearctx">${t("act.remove")}</button></div></section>` : ""}
-      <section class="card"><div class="card-body stack" style="gap:14px">
-        <div class="row wrap" style="gap:14px;align-items:flex-end">
-          <div class="field"><span class="label">${t("cr.format")}</span><div class="seg" role="group" aria-label="${t("cr.format")}">${CR_FMT.map(f => `<button data-cr="fmt:${f}" aria-pressed="${c.fmt === f}" title="${esc(t("cr.fit." + f.replace(":", "x")))}">${f}</button>`).join("")}</div></div>
-          <div class="field"><span class="label">${t("st.outLang")}</span><div class="seg" role="group" aria-label="${t("st.outLang")}">${["en", "id"].map(k => `<button data-cr="lang:${k}" aria-pressed="${L === k}">${k === "en" ? "English" : "Indonesia"}</button>`).join("")}</div></div>
-        </div>
-        <div class="field"><span class="label">${t("cr.style")}</span><div class="row wrap" style="gap:6px">${CR_STYLES.map(k => `<button class="chip" data-cr="style:${k}" aria-pressed="${c.style === k}">${t("cr.style." + k)}</button>`).join("")}</div></div>
-        <div class="row" style="align-items:flex-end;gap:8px"><div class="field" style="flex:1"><label for="cr-brief">${t("cr.brief")}</label>
-          <input id="cr-brief" class="input" value="${esc(c.brief)}" placeholder="${esc(t("cr.defBrief"))}"></div>
-          <button class="btn primary" data-cr="gen" ${busy ? "disabled" : ""}>${ic("sparkles")}${c.results.length ? t("cr.regen") : t("cr.gen")}</button></div>
-        <div class="row wrap" style="gap:16px">${crToggle("logo", t("cr.opt.logo"))}${crToggle("text", t("cr.opt.text"))}${crToggle("library", t("cr.opt.library"))}</div>
-      </div></section>
-      <section class="card"><div class="card-head"><h2>${t("cr.results")}</h2>${c.results.length && !busy ? `<span class="pill plain">${c.results.length}</span>` : ""}<span class="spacer"></span><span class="small muted">${t("cr.demoNote")}</span></div><div class="card-body" style="margin-top:8px">${grid}</div></section>
-      ${detail}
-    </div>
-    <aside class="stack" style="position:sticky;top:76px">
-      <section class="card"><div class="card-head"><h2>${t("cr.checks")}</h2>${infoBtn(t("cr.checks.i"))}</div><div class="card-body" id="cr-checks">${busy ? "" : crChecksHTML()}</div></section>
-      <section class="card"><div class="card-head"><h2>${t("cr.kit")}</h2></div><div class="card-body stack" style="gap:10px">
-        <div class="row"><span class="cr-kitlogo"><img src="assets/kkb-logo.png" alt="Kura Kura Bali logo"></span><div class="small"><b>${t("cr.kit.logo")}</b><div class="muted">${t("cr.kit.logo.d")}</div></div></div>
-        <div><div class="small" style="margin-bottom:6px"><b>${t("cr.kit.colours")}</b></div><div class="row" style="gap:6px">${["#2b512b", "#acc29b", "#cfcabe", "#f2ecdb", "#111111"].map(h => `<span class="cr-sw" style="background:${h}" title="${h}"></span>`).join("")}</div></div>
-        <div class="small"><b>${t("cr.kit.font")}</b><div class="muted">Plus Jakarta Sans</div></div>
-        <div class="small"><b>${t("cr.kit.photos")}</b><div class="muted">${t("cr.kit.photos.d")}</div></div></div></section>
-      <section class="card"><div class="card-head"><h2>${t("cr.recent")}</h2>${c.lib.length ? `<span class="pill plain">${c.lib.length}</span>` : ""}</div><div class="card-body">
-        ${c.lib.length ? `<div class="cr-lib">${c.lib.map((x, i) => `<button class="cr-item" data-cr="lib:${i}" aria-label="${esc(x.headline)}">${crFrame(Object.assign({}, x, { fmt: "1:1" }), { uid: "l" })}</button>`).join("")}</div>` : `<p class="small muted">${t("cr.recent.none")}</p>`}</div></section>
-    </aside></div>`;
+/* ---------------- Content agent (chat) ----------------
+   Prototype: the agent is simulated in the browser. It reads the request, asks for what is
+   missing (channel, tone), writes a caption + on-brand visual, gives feedback from the brand
+   checks, and takes follow-up requests. Production connects the same chat to an LLM agent
+   with tools for this dashboard (mentions, insights, brand kit, Planner). */
+S.ag = { msgs: [], slots: {}, draft: null, busy: false, ctx: null, seed: 11, ver: 0 };
+const AG_FMT = { instagram: "4:5", facebook: "1:1", linkedin: "16:9", google: "16:9" };
+const AG_EMO = { fashion: "✨", outlet: "🛍️", turtle: "🐢", campus: "🌱", coast: "🌊" };
+const AG_TAG = { fashion: "#LabdanationFashionWeek", outlet: "#SiraVillage", turtle: "#TurtleConservation", campus: "#Serangan", coast: "#Serangan" };
+const AG_COPY = {
+  en: {
+    fashion: ["Front row, by the sea.", "{b} hosted Labdanation Fashion Week on Serangan: local designers, coastal light and a runway that ended at the water.", "Swipe for the looks and tell us your favourite."],
+    outlet: ["Your weekend plans just got easier.", "Sira Village Grand Outlet brings shopping, food and the coast together in one easy walk.", "Visit us this weekend, open daily from 10 am."],
+    turtle: ["Every hatchling counts.", "Our conservation team released new hatchlings on Serangan this week, part of our long-term work to protect the coast.", "Ask us how you can join the next release."],
+    campus: ["Built for what's next.", "{b} is growing into a new place to learn, work and invest in Bali, right on the coast.", "Find out more at the link in bio."],
+    coast: ["Slow mornings on Serangan.", "Sea air, open space and a coast that's coming alive at {b}.", "Plan your visit."],
+    formal: "More information is available at the link in our bio."
   },
-  mount() {
-    const b = $("#cr-brief"); if (b) b.addEventListener("input", e => { S.cr.brief = e.target.value; });
-    const h = $("#cr-hl"); if (h) h.addEventListener("input", e => {
-      const r = S.cr.results[S.cr.sel]; r.headline = e.target.value;
-      $$(".cr-item[aria-pressed=true] .cr-hl, .cr-player .cr-hl").forEach(x => (x.textContent = r.headline)); $("#cr-checks").innerHTML = crChecksHTML(); });
-    $$("[data-crt]").forEach(x => x.onchange = () => { S.cr[x.dataset.crt] = x.checked; S.cr.results.forEach(r => { if (x.dataset.crt in r) r[x.dataset.crt] = x.checked; }); rerender(); });
+  id: {
+    fashion: ["Barisan depan, di tepi laut.", "{b} menggelar Labdanation Fashion Week di Serangan: desainer lokal, cahaya pesisir, dan runway yang berakhir di tepi air.", "Geser untuk melihat koleksinya dan ceritakan favoritmu."],
+    outlet: ["Rencana akhir pekan jadi lebih mudah.", "Sira Village Grand Outlet menyatukan belanja, kuliner, dan pesisir dalam satu jalan santai.", "Mampir akhir pekan ini, buka setiap hari mulai pukul 10.00."],
+    turtle: ["Setiap tukik berarti.", "Tim konservasi kami melepas tukik baru di Serangan minggu ini, bagian dari upaya jangka panjang menjaga pesisir.", "Tanyakan cara ikut pelepasan berikutnya."],
+    campus: ["Dibangun untuk masa depan.", "{b} tumbuh menjadi tempat baru untuk belajar, bekerja, dan berinvestasi di Bali, tepat di tepi pantai.", "Info lengkap ada di tautan di bio."],
+    coast: ["Pagi santai di Serangan.", "Udara laut, ruang terbuka, dan pesisir yang mulai hidup di {b}.", "Rencanakan kunjunganmu."],
+    formal: "Informasi lengkap tersedia di tautan pada bio kami."
   }
 };
-function crAction(a) {
-  const c = S.cr, [k, v] = a.split(/:(.*)/s), r = c.results[c.sel];
-  if (k === "fmt" || k === "style") { c[k] = v; return rerender(); }
-  if (k === "lang") { c.lang = v; return rerender(); }
-  if (k === "sel") { c.sel = +v; return rerender(); }
-  if (k === "clearctx") { c.ctx = null; return rerender(); }
-  if (k === "gen" || k === "more") {
-    if (k === "gen") c.headline = "";
-    c.busy = true; rerender();
-    setTimeout(() => { crGenerate(k === "more"); c.busy = false; rerender(); toast(t("cr.toast.ready")); }, 1300);
-    return;
+const agIs = (re, s) => re.test((s || "").toLowerCase());
+function agDetect(text) {
+  const s = text.toLowerCase(), o = {};
+  const ch = [["instagram", /instagram|\big\b|insta|reels?\b/], ["facebook", /facebook|\bfb\b/], ["linkedin", /linkedin/], ["google", /google|business profile|\bgbp\b/]].find(([, re]) => re.test(s));
+  if (ch && D.accounts.some(a => a.platform === ch[0])) o.channel = ch[0];
+  if (/formal|resmi|profesional|professional/.test(s)) o.tone = "formal";
+  else if (/santai|casual|warm|hangat|fun|ramah|friendly/.test(s)) o.tone = "warm";
+  else if (/netral|neutral/.test(s)) o.tone = "neutral";
+  if (/english|inggris|\ben\b/.test(s)) o.lang = "en";
+  else if (/bahasa indonesia|\bindonesia\b|\bid\b/.test(s)) o.lang = "id";
+  if (/\b(short|shorter)\b|pendek|singkat|ringkas/.test(s)) o.short = true;
+  if (/\b(long|longer|more detail)\b|panjang|lebih detail/.test(s)) o.short = false;
+  if (/(no|without|remove) (visual|image|picture|photo)|tanpa (gambar|visual|foto)|hapus (gambar|visual)/.test(s)) o.visual = false;
+  else if (/visual|image|picture|photo|gambar|foto/.test(s)) o.newVisual = true;
+  if (/(no|without) emoji|tanpa emoji/.test(s)) o.emoji = false;
+  const sub = /special economic zone|kawasan ekonomi/.test(s) ? "campus" : /sira village|promo|diskon|discount/.test(s) && !/fashion/.test(s) ? "outlet" : crSubject(s);
+  if (sub !== "coast" || /coast|pesisir|pantai|beach/.test(s)) o.subject = sub;
+  return o;
+}
+function agGuessLang(text) {
+  const s = " " + text.toLowerCase() + " ";
+  const id = (s.match(/ (buat|buatkan|untuk|tentang|yang|dengan|dan|minggu|ini|posting|postingan|tolong|bikin) /g) || []).length;
+  const en = (s.match(/ (make|write|create|about|for|the|this|week|post|please|with) /g) || []).length;
+  return id > en ? "id" : en > id ? "en" : S.lang;
+}
+function agCaption(d) {
+  const C = AG_COPY[d.lang], [hook, body, cta] = C[d.subject], b = D.project.name;
+  const emoji = d.emoji !== false && d.tone === "warm" ? " " + AG_EMO[d.subject] : "";
+  const end = d.tone === "formal" ? C.formal : cta;
+  const tags = "#" + b.replace(/\s+/g, "") + (d.short ? "" : " " + AG_TAG[d.subject]);
+  return (d.short ? [hook + emoji, end] : [hook + emoji, body.replace("{b}", b), end]).join("\n\n") + "\n\n" + tags;
+}
+function agVisual(d, fresh) {
+  const c = S.ag; if (fresh || !d.visual) c.seed += 7;
+  const hs = CR_HL[d.lang][d.subject];
+  return { id: "ag" + c.seed, fmt: AG_FMT[d.channel] || "4:5", style: ["photo", "editorial", "photo", "illustration"][c.seed % 4], subject: d.subject, logo: true, text: true, library: true,
+    variant: c.seed % 4, seed: c.seed * 31, headline: hs[c.seed % 4], brief: d.brief, lang: d.lang };
+}
+function agNextSlot(t0) {
+  const ts = new Date(D.TODAY), bt = bestTimes(rangeMentions());
+  ts.setDate(ts.getDate() + 1); let n = 0; while (ts.getDay() !== bt.day && n++ < 7) ts.setDate(ts.getDate() + 1);
+  ts.setHours(bt.hour, 0, 0, 0); return ts;
+}
+function agFeedback(d) {
+  const out = [], acc = D.accounts.find(a => a.platform === d.channel), lim = acc ? acc.limit : 2200;
+  if (d.visual) crChecks(d.visual).out.filter(x => x.lv !== "ok").forEach(x => out.push({ lv: x.lv, txt: `${x.t}: ${x.d}` }));
+  if (d.caption.length > lim) out.push({ lv: "bad", txt: t("ag.fb.long", { n: d.caption.length, m: lim }) });
+  if (d.banned.length) out.push({ lv: "warn", txt: t("ag.fb.banned", { w: d.banned.map(b => `“${b}”`).join(", ") }) });
+  if (d.channel === "instagram" && !d.visual) out.push({ lv: "warn", txt: t("ag.fb.igNoVisual") });
+  if (d.channel === "linkedin" && d.tone === "warm") out.push({ lv: "warn", txt: t("ag.fb.liTone") });
+  if (!out.length) out.push({ lv: "ok", txt: t("ag.fb.allGood") });
+  return out;
+}
+const AG_REFINE = ["ag.r.short", "ag.r.formal", "ag.r.visual", "ag.r.lang"];
+function agDraftMsg(d, intro) {
+  const fb = agFeedback(d), v = d.visual ? Object.assign({}, d.visual) : null;
+  return { ai: 1, intro, card: { caption: d.caption, visual: v, channel: d.channel, ver: S.ag.ver }, fb, chips: AG_REFINE.map(k => t(k, { l: d.lang === "en" ? "Indonesia" : "English" })), when: d.date };
+}
+function agBuild(fresh) {
+  const c = S.ag, s = c.slots, d = c.draft || {};
+  Object.assign(d, { brief: s.brief, subject: s.subject, channel: s.channel, tone: s.tone, lang: s.lang, short: !!s.short, emoji: s.emoji, banned: s.banned || [] });
+  if (s.visual === false) d.visual = null; else if (fresh || !d.visual || d.visual.subject !== d.subject || d.visual.fmt !== AG_FMT[d.channel] || d.visual.lang !== d.lang) d.visual = agVisual(d, fresh);
+  d.caption = agCaption(d); d.date = d.date || agNextSlot(); c.ver++; c.draft = d; return d;
+}
+function agReply(text) {
+  const c = S.ag, s = c.slots, det = agDetect(text);
+  const banned = D.settings.banned.filter(b => text.toLowerCase().includes(b.toLowerCase()));
+  if (!c.draft) {
+    if (!s.brief) { s.brief = text; s.subject = det.subject || "coast"; s.lang = det.lang || agGuessLang(text); s.banned = banned; }
+    ["channel", "tone", "short", "visual", "emoji"].forEach(k => { if (det[k] !== undefined) s[k] = det[k]; });
+    if (det.lang && s.brief !== text) s.lang = det.lang;
+    if (/terserah|you choose|anything|bebas|up to you/.test(text.toLowerCase())) { s.channel = s.channel || D.accounts[0].platform; s.tone = s.tone || "warm"; }
+    if (!s.channel) return { ai: 1, intro: t("ag.q.channel", { topic: t("ag.topic." + s.subject) }), chips: D.accounts.map(a => t("src." + a.platform)).concat(t("ag.anyChoice")) };
+    if (!s.tone) return { ai: 1, intro: t("ag.q.tone", { ch: t("src." + s.channel) }), chips: [t("tone.warm"), t("tone.neutral"), t("tone.formal")] };
+    const d = agBuild(true);
+    return agDraftMsg(d, t("ag.draft1", { ch: t("src." + d.channel), tone: t("tone." + d.tone).toLowerCase() }) + (banned.length ? " " + t("ag.leftOut", { w: banned.map(b => `“${b}”`).join(", ") }) : ""));
   }
-  if (!r) return;
-  if (k === "save") { if (!c.lib.find(x => x.id === r.id)) c.lib.unshift(Object.assign({}, r)); c.lib = c.lib.slice(0, 9); rerender(); return toast(t("cr.toast.saved")); }
-  if (k === "lib") { const x = c.lib[+v]; c.results = [Object.assign({}, x)]; c.sel = 0; c.fmt = x.fmt; return rerender(); }
-  if (k === "download") return toast(t("toast.demoDownload"));
-  if (k === "planner") { if (!c.lib.find(x => x.id === r.id)) c.lib.unshift(Object.assign({}, r)); S.pl.prefill = S.pl.prefill || ""; S.pl.prefillMedia = Object.assign({}, r); location.hash = "#/planner?compose=1"; }
+  const changes = [];
+  if (det.channel && det.channel !== s.channel) { s.channel = det.channel; changes.push(t("ag.ch.channel", { ch: t("src." + det.channel) })); }
+  if (det.tone && det.tone !== s.tone) { s.tone = det.tone; changes.push(t("ag.ch.tone", { tone: t("tone." + det.tone).toLowerCase() })); }
+  if (det.lang && det.lang !== s.lang) { s.lang = det.lang; changes.push(t("ag.ch.lang", { l: det.lang === "en" ? "English" : "Bahasa Indonesia" })); }
+  if (det.short !== undefined && det.short !== !!s.short) { s.short = det.short; changes.push(t(det.short ? "ag.ch.short" : "ag.ch.long")); }
+  if (det.emoji === false) { s.emoji = false; changes.push(t("ag.ch.noEmoji")); }
+  if (det.visual === false) { s.visual = false; changes.push(t("ag.ch.noVisual")); }
+  if (det.newVisual) { s.visual = true; changes.push(t("ag.ch.visual")); }
+  if (det.subject && det.subject !== s.subject && !changes.length) { s.subject = det.subject; s.brief = text; c.draft.visual = null; changes.push(t("ag.ch.topic", { topic: t("ag.topic." + det.subject) })); }
+  if (!changes.length) return { ai: 1, intro: t("ag.unsure"), chips: AG_REFINE.map(k => t(k, { l: s.lang === "en" ? "Indonesia" : "English" })) };
+  const d = agBuild(!!det.newVisual);
+  return agDraftMsg(d, t("ag.updated", { list: changes.join(", ") }));
+}
+function agSend(text) {
+  text = (text || "").trim(); const c = S.ag; if (!text || c.busy) return;
+  c.msgs.push({ me: 1, text }); c.busy = true; rerender();
+  setTimeout(() => { c.msgs.push(agReply(text)); c.busy = false; if (S.route === "create") rerender(); }, 900);
+}
+function agMsgHTML(m, i, last) {
+  if (m.me) return `<div class="msg me">${esc(m.text)}</div>`;
+  const cur = m.card && m.card.ver === S.ag.ver;
+  const card = m.card ? `<div class="ag-card">${m.card.visual ? `<div class="ag-vis">${crFrame(m.card.visual, { uid: "m" + i })}</div>` : ""}<div class="ag-cap">${esc(m.card.caption)}</div>
+    <div class="row wrap ag-meta"><span class="pill plain">${t("src." + m.card.channel)}</span><span class="small muted">${ic("calendar")} ${t("ag.when", { d: fDT(m.when) })}</span><span class="spacer"></span>${cur ? `<span class="pill">${t("ag.current")}</span>` : `<button class="btn sm ghost" data-ag="restore:${i}">${t("ag.useThis")}</button>`}</div></div>` : "";
+  const fb = m.fb ? `<div class="ag-fb"><b class="small">${t("ag.feedback")}</b>${m.fb.map(f => `<div class="check ${f.lv}"><span class="ic">${ic(f.lv === "ok" ? "check" : f.lv === "warn" ? "alertc" : "alert")}</span><div><p>${esc(f.txt)}</p></div></div>`).join("")}</div>` : "";
+  const acts = m.card && cur ? `<div class="row wrap" style="gap:6px"><button class="btn sm primary" data-ag="planner">${ic("calendar")}${t("ag.toPlanner")}</button><button class="btn sm" data-ag="draft">${ic("pen")}${t("ag.saveDraft")}</button></div>` : "";
+  const chips = m.chips && last ? `<div class="row wrap" style="gap:6px">${m.chips.map(c => `<button class="chip" data-agq="${esc(c)}">${esc(c)}</button>`).join("")}</div>` : "";
+  return `<div class="msg ai"><span class="ai-badge">${ic("sparkles")}AI</span><div class="stack" style="gap:10px"><p>${esc(m.intro)}</p>${card}${fb}${acts}${chips}</div></div>`;
+}
+V.create = {
+  html() {
+    const c = S.ag, d = c.draft, starters = ["ag.s1", "ag.s2", "ag.s3", "ag.s4"];
+    const log = c.msgs.length ? c.msgs.map((m, i) => agMsgHTML(m, i, i === c.msgs.length - 1)).join("")
+      : `<div class="empty" style="padding:28px 8px">${ic("sparkles")}<b>${t("ag.empty")}</b><p>${t("ag.empty.b")}</p><div class="row wrap" style="gap:6px;justify-content:center;margin-top:12px">${starters.map(k => `<button class="chip" data-agq="${esc(t(k))}">${t(k)}</button>`).join("")}</div></div>`;
+    const typing = c.busy ? `<div class="msg ai"><span class="ai-badge">${ic("sparkles")}AI</span><div class="small muted">${t("ag.thinking")}</div></div>` : "";
+    const side = d ? `<section class="card"><div class="card-head"><h2>${t("ag.draft")}</h2><span class="pill plain">v${c.ver}</span></div><div class="card-body stack" style="gap:12px">
+        ${d.visual ? crFrame(d.visual, { uid: "side" }) : `<div class="small muted">${t("ag.noVisual")}</div>`}
+        <div class="field"><label for="ag-cap">${t("ag.caption")}</label><textarea id="ag-cap" class="input" rows="7">${esc(d.caption)}</textarea></div>
+        <div class="row wrap" style="gap:6px"><span class="pill plain">${t("src." + d.channel)}</span><span class="pill plain">${t("tone." + d.tone)}</span><span class="pill plain">${d.lang.toUpperCase()}</span></div>
+        <p class="small muted">${ic("calendar")} ${t("ag.when", { d: fDT(d.date) })}</p>
+        <div class="row wrap" style="gap:6px"><button class="btn primary" data-ag="planner">${ic("calendar")}${t("ag.toPlanner")}</button><button class="btn" data-ag="draft">${ic("pen")}${t("ag.saveDraft")}</button></div></div></section>`
+      : `<section class="card"><div class="card-head"><h2>${t("ag.draft")}</h2></div><div class="card-body"><p class="small muted">${t("ag.noDraft")}</p></div></section>`;
+    return head(t("nav.create"), t("create.desc"), c.msgs.length ? `<button class="btn" data-ag="reset">${ic("plus")}${t("ag.newChat")}</button>` : "") + `<div class="studio"><div class="stack">
+      ${c.ctx ? `<section class="card"><div class="card-body row" style="align-items:flex-start">${ic("link")}<div style="flex:1;min-width:0"><b class="small">${t("cr.context")}</b><p class="small ink2" style="margin-top:2px">${esc(c.ctx)}</p></div></div></section>` : ""}
+      <section class="card ag-chat"><div id="ag-log" class="ag-log" aria-live="polite">${log}${typing}</div>
+        <div class="ag-input"><label class="sr-only" for="ag-in">${t("ag.ph")}</label><textarea id="ag-in" class="input" rows="1" placeholder="${esc(t("ag.ph"))}" ${c.busy ? "disabled" : ""}></textarea><button class="btn primary" id="ag-go" ${c.busy ? "disabled" : ""}>${ic("send")}<span class="hide-sm">${t("ai.send")}</span></button></div>
+        <p class="ai-note" style="margin:0 14px 12px">${t("ag.note")}</p></section></div>
+      <aside class="stack ag-side">${side}
+        <section class="card"><div class="card-head"><h2>${t("ag.knows")}</h2></div><div class="card-body stack small" style="gap:8px">
+          <div class="row">${ic("check")}<span>${t("ag.k.kit")}</span></div><div class="row">${ic("check")}<span>${t("ag.k.banned", { n: D.settings.banned.length })}</span></div>
+          <div class="row">${ic("check")}<span>${t("ag.k.mentions", { n: fI(rangeMentions().length) })}</span></div><div class="row">${ic("check")}<span>${t("ag.k.planner")}</span></div></div></section></aside></div>`;
+  },
+  mount() {
+    const log = $("#ag-log"); if (log) log.scrollTop = 1e6;
+    const inp = $("#ag-in"); if (!inp) return;
+    const go = () => agSend(inp.value);
+    $("#ag-go").onclick = go;
+    inp.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); go(); } });
+    inp.addEventListener("input", () => { inp.style.height = "auto"; inp.style.height = Math.min(inp.scrollHeight, 140) + "px"; });
+    const cap = $("#ag-cap"); if (cap) cap.addEventListener("input", e => { S.ag.draft.caption = e.target.value; });
+    if (!S.ag.busy && matchMedia("(min-width: 900px)").matches) inp.focus({ preventScroll: true });
+  }
+};
+function agAction(a) {
+  const c = S.ag, d = c.draft, [k, v] = a.split(/:(.*)/s);
+  if (k === "reset") { S.ag = { msgs: [], slots: {}, draft: null, busy: false, ctx: null, seed: c.seed, ver: 0 }; return rerender(); }
+  if (k === "restore") { const m = c.msgs[+v]; Object.assign(d, { caption: m.card.caption, visual: m.card.visual, channel: m.card.channel }); c.slots.channel = m.card.channel; c.ver++; m.card.ver = c.ver; return rerender(); }
+  if (!d) return;
+  if (k === "draft") {
+    D.drafts.push({ id: "d" + Date.now(), title: d.caption.split("\n")[0].slice(0, 60), tpl: "caption", lang: d.lang, text: d.caption, media: d.visual, saved: new Date(D.TODAY.getTime() + 60e3) });
+    return toast(t("ag.toast.draft"), { label: t("ag.openDrafts"), fn: () => (location.hash = "#/studio") });
+  }
+  if (k === "planner") {
+    const acc = D.accounts.find(x => x.platform === d.channel);
+    S.pl.prefill = d.caption; S.pl.prefillMedia = d.visual ? Object.assign({}, d.visual) : null; S.pl.prefillDate = d.date; S.pl.prefillAcc = acc ? [acc._id] : null;
+    location.hash = "#/planner?compose=1";
+  }
 }
 
 /* ================================================================ SHELL */
 const NAV = [
   [null, [["home", "home"]]],
   ["analytics", [["mentions", "inbox"], ["insights", "chart"], ["benchmark", "bars"], ["value", "coins"], ["reports", "file"]]],
-  ["content", [["studio", "pen"], ["create", "image"], ["planner", "calendar"]]]
+  ["content", [["studio", "pen"], ["create", "sparkles"], ["planner", "calendar"]]]
 ];
 function navCounts() {
   return { mentions: [D.mentions.filter(m => !isVisited(m) && m.date > new Date(+D.TODAY - 7 * 864e5)).length], alerts: [D.alerts.filter(a => a.state === "open").length, true] };
@@ -1550,13 +1643,13 @@ function applyQuery() {
     if (q.alert) { const a = D.alerts.find(x => x.id === q.alert); if (a) { S.st.ctx = { kind: "alert", text: alertTitle(a) + ". " + alertBody(a), topic: a.topic }; S.st.brief = t("st.briefFromAlert." + (a.topic && I.en["st.briefFromAlert." + a.topic] ? a.topic : "general")); S.st.text = ""; } }
   }
   if (S.route === "planner" && q.post) { const p = D.posts.find(x => x._id === q.post); if (p) { const d = new Date(p.scheduleDate); S.pl.month = new Date(d.getFullYear(), d.getMonth(), 1); setTimeout(() => composer({ id: p._id }), 50); } }
-  if (S.route === "planner" && q.compose) setTimeout(() => composer({ text: S.pl.prefill || "", media: S.pl.prefillMedia || null }), 50);
+  if (S.route === "planner" && q.compose) setTimeout(() => composer({ text: S.pl.prefill || "", media: S.pl.prefillMedia || null, date: S.pl.prefillDate || null, accounts: S.pl.prefillAcc || null }), 50);
   if (S.route === "studio" && q.brief) { S.st.brief = q.brief; S.st.text = ""; }
   if (S.route === "create") {
-    const c = S.cr;
-    if (q.brief) { c.brief = q.brief; c.ctx = null; c.results = []; c.headline = ""; }
-    if (q.alert) { const a = D.alerts.find(x => x.id === q.alert); if (a) { c.ctx = alertTitle(a) + ". " + alertBody(a); c.brief = t("st.briefFromAlert." + (a.topic && I.en["st.briefFromAlert." + a.topic] ? a.topic : "general")); c.results = []; c.headline = ""; } }
-    if (q.mention) { const m = D.mentions.find(x => x.id === q.mention); if (m) { c.ctx = `“${m.text}” · ${m.author.name}`; c.brief = (I[S.lang]["topic." + m.topic] || m.topic); c.results = []; c.headline = ""; } }
+    const start = (brief, ctx) => { S.ag = { msgs: [], slots: {}, draft: null, busy: false, ctx, seed: S.ag.seed, ver: 0 }; setTimeout(() => agSend(brief), 60); };
+    if (q.brief) start(q.brief, null);
+    if (q.alert) { const a = D.alerts.find(x => x.id === q.alert); if (a) start(t("st.briefFromAlert." + (a.topic && I.en["st.briefFromAlert." + a.topic] ? a.topic : "general")), alertTitle(a) + ". " + alertBody(a)); }
+    if (q.mention) { const m = D.mentions.find(x => x.id === q.mention); if (m) start(t("ag.fromMention", { t: (I[S.lang]["topic." + m.topic] || m.topic).toLowerCase() }), `“${m.text}” · ${m.author.name}`); }
   }
   if (S.route === "new-project" && NP.mode === "edit") NP.reset();
   if (S.route === "project-settings") { const p = PROJ.get(q.id || D.project.id); if (p) NP.load(p); }
@@ -1699,7 +1792,9 @@ document.addEventListener("click", e => {
   if (d.tone) { S.st.tone = d.tone; $$("[data-tone]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tone === d.tone)); return; }
   if (d.olang) { S.st.lang = d.olang; rerender(); return; }
   if (d.st) { studioAction(d.st); return; }
-  if (d.cr) { crAction(d.cr); return; }
+  if (d.mtr !== undefined) { S.m.tr = d.mtr; $$("[data-mtr]").forEach(b => b.setAttribute("aria-pressed", b.dataset.mtr === d.mtr)); renderMList(); return; }
+  if (d.ag) { agAction(d.ag); return; }
+  if (d.agq) { agSend(d.agq); return; }
   if (d.deldraft) { const i = D.drafts.findIndex(x => x.id === d.deldraft), dr = D.drafts.splice(i, 1)[0]; if (S.st.draftId === dr.id) S.st.draftId = null; rerender();
     toast(t("toast.draftDeleted"), { label: t("act.undo"), fn: () => { D.drafts.splice(i, 0, dr); rerender(); } }); return; }
   if (el.closest("tr[data-draft]")) { const dr = D.drafts.find(x => x.id === el.closest("tr[data-draft]").dataset.draft);

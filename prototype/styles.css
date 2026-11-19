@@ -466,3 +466,20 @@ table.t{width:100%;border-collapse:collapse}
 .cr-att .cr-frame{width:64px;flex:none}
 .pv-media .cr-frame{border-radius:0}
 @media (max-width:720px){.cr-detail{grid-template-columns:1fr}.cr-grid{grid-template-columns:repeat(2,1fr)}}
+/* ============ Content agent (chat) ============ */
+.ag-chat{display:flex;flex-direction:column;min-height:calc(100vh - 220px)}
+.ag-log{flex:1;display:flex;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;max-height:calc(100vh - 290px);min-height:360px}
+.ag-log .msg{max-width:min(620px,94%)}
+.ag-log .msg.ai p{margin:0}
+.ag-input{display:flex;gap:8px;align-items:flex-end;padding:12px 14px;border-top:1px solid var(--border)}
+.ag-input textarea{flex:1;resize:none;min-height:40px;max-height:140px;line-height:1.45}
+.ag-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ag-vis{max-width:300px;padding:10px 10px 0}
+.ag-cap{padding:10px 12px;white-space:pre-wrap;font-size:14px;line-height:1.55}
+.ag-meta{padding:0 12px 10px;gap:6px}
+.ag-meta svg{width:12px;height:12px;vertical-align:-2px}
+.ag-fb{display:flex;flex-direction:column;gap:6px}
+.ag-fb .check{margin:0}
+.ag-side{position:sticky;top:76px}
+.ag-side #ag-cap{resize:vertical;font-size:13px;line-height:1.5}
+@media (max-width:900px){.ag-side{position:static}.ag-chat{min-height:0}.ag-log{max-height:none;min-height:300px}}

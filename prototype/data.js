@@ -40,23 +40,26 @@ function buildKKB(project) {
   ];
   const A = Object.fromEntries(authors.map(a => [a.key, a]));
 
-  /* ---- Mention templates: [text, lang, sentiment, topic, emotion, source, author, translation?] ---- */
+  /* ---- Mention templates: [text, lang, sentiment, topic, emotion, source, author, translation into the other language (id↔en)] ---- */
   const T = [
     ["Sira Village Grand Outlet Bali raih Best Retail Development di PropertyGuru Indonesia Property Awards 2026, hasil kemitraan Mitsubishi Estate dan PT Bali Turtle Island Development (BTID).", "id", "pos", "siraVillage", "trust", "news", "bloomberg",
       "Sira Village Grand Outlet Bali wins Best Retail Development at the PropertyGuru Indonesia Property Awards 2026, a partnership between Mitsubishi Estate and PT Bali Turtle Island Development (BTID)."],
-    ["Singapore investors eye the Kura Kura Bali Special Economic Zone as ACS Bali and a SingCham chapter set up in the area.", "en", "pos", "kek", "anticipation", "news", "jakpost"],
+    ["Singapore investors eye the Kura Kura Bali Special Economic Zone as ACS Bali and a SingCham chapter set up in the area.", "en", "pos", "kek", "anticipation", "news", "jakpost",
+      "Investor Singapura melirik KEK Kura Kura Bali seiring hadirnya ACS Bali dan cabang SingCham di kawasan tersebut."],
     ["KEK Kura Kura Bali kembangkan 83 spesies tanaman untuk mendukung pariwisata hijau di Serangan.", "id", "pos", "sustainability", "trust", "news", "wahana",
       "KEK Kura Kura Bali grows 83 plant species to support green tourism in Serangan."],
     ["Pangdam IX/Udayana kunjungi KEK Kura Kura Bali, bahas sinergi keamanan dan kenyamanan investasi di kawasan.", "id", "neu", "kek", "anticipation", "news", "balipost",
       "The Udayana military commander visits KEK Kura Kura Bali to discuss security and investment comfort in the zone."],
     ["Labdanation Fashion Week Season III digelar di Sira Village, Kura Kura Bali, didukung fasilitas pemerintah.", "id", "neu", "fashion", "anticipation", "news", "voi",
       "Labdanation Fashion Week Season III is held at Sira Village, Kura Kura Bali, with government support."],
-    ["Sustainable fashion show at Sira Village puts eco-friendly textiles in the spotlight.", "en", "pos", "fashion", "joy", "news", "tribune"],
+    ["Sustainable fashion show at Sira Village puts eco-friendly textiles in the spotlight.", "en", "pos", "fashion", "joy", "news", "tribune",
+      "Peragaan busana berkelanjutan di Sira Village menyorot tekstil ramah lingkungan."],
     ["KEK Kura Kura Bali fokus pada investasi, keamanan, dan pengembangan kawasan ekonomi khusus di Denpasar.", "id", "neu", "kek", "anticipation", "news", "antara",
       "KEK Kura Kura Bali focuses on investment, security and developing the special economic zone in Denpasar."],
     ["Wisata belanja baru di Bali: Sira Village hadirkan lebih dari 100 merek fesyen dan kuliner dengan pemandangan pantai.", "id", "pos", "siraVillage", "joy", "news", "viva",
       "A new shopping destination in Bali: Sira Village brings more than 100 fashion and food brands with a beach view."],
-    ["What the Kura Kura Bali Special Economic Zone means for investors in 2026.", "en", "neu", "kek", "anticipation", "news", "times"],
+    ["What the Kura Kura Bali Special Economic Zone means for investors in 2026.", "en", "neu", "kek", "anticipation", "news", "times",
+      "Arti KEK Kura Kura Bali bagi investor pada 2026."],
     ["Kura Kura Bali buka program literasi untuk siswa sekitar Serangan.", "id", "pos", "community", "trust", "news", "atnews",
       "Kura Kura Bali opens a literacy programme for students around Serangan."],
     ["Bukan sekadar tempat belanja, Sira Village di KEK Kura Kura Bali memadukan nuansa modern dan tradisi lokal. #SiraVillage #AksaraBali", "id", "pos", "siraVillage", "joy", "tiktok", "jjima",
@@ -71,16 +74,20 @@ function buildKKB(project) {
       "Does anyone know if parking at Sira Village is free or paid?"],
     ["Outfit check di Labdanation Fashion Week, Sira Village. Venue-nya keren!", "id", "pos", "fashion", "joy", "tiktok", "jegeg",
       "Outfit check at Labdanation Fashion Week, Sira Village. The venue is great!"],
-    ["Opening week at Sira Village Grand Outlet. Come say hi!", "en", "pos", "siraVillage", "joy", "tiktok", "siravillage"],
+    ["Opening week at Sira Village Grand Outlet. Come say hi!", "en", "pos", "siraVillage", "joy", "tiktok", "siravillage",
+      "Minggu pembukaan Sira Village Grand Outlet. Yuk, mampir!"],
     ["5 tahun jadi pelanggan setia Falala Chocolate, sekarang ada gerainya di Sira Village.", "id", "pos", "siraVillage", "joy", "youtube", "falala",
       "Five years as a loyal Falala Chocolate customer, and now there's a store at Sira Village."],
     ["Akhirnya dapat sepatu Asics original di Sira Village, Serangan. Harganya miring!", "id", "pos", "siraVillage", "joy", "youtube", "kuliner",
       "Finally got original Asics shoes at Sira Village, Serangan. Great prices!"],
-    ["Kura Kura Bali SEZ draws new education and retail tenants (Antara).", "en", "neu", "kek", "anticipation", "bluesky", "antaraposter"],
+    ["Kura Kura Bali SEZ draws new education and retail tenants (Antara).", "en", "neu", "kek", "anticipation", "bluesky", "antaraposter",
+      "KEK Kura Kura Bali menarik penyewa baru di bidang pendidikan dan ritel (Antara)."],
     ["Jalan ke Serangan padat waktu fashion week. Semoga ada shuttle untuk acara berikutnya.", "id", "neg", "access", "anger", "x", "xuser1",
       "The road to Serangan was congested during fashion week. Hope there's a shuttle for the next event."],
-    ["Outlet prices at Sira Village still feel high for some brands, even with the discount.", "en", "neg", "siraVillage", "anger", "x", "xuser2"],
-    ["Walked the coastal path at Kura Kura Bali this morning. Quiet and well kept.", "en", "pos", "tourism", "joy", "x", "xuser2"],
+    ["Outlet prices at Sira Village still feel high for some brands, even with the discount.", "en", "neg", "siraVillage", "anger", "x", "xuser2",
+      "Harga outlet di Sira Village masih terasa mahal untuk beberapa merek, meski sudah diskon."],
+    ["Walked the coastal path at Kura Kura Bali this morning. Quiet and well kept.", "en", "pos", "tourism", "joy", "x", "xuser2",
+      "Pagi ini jalan di jalur pesisir Kura Kura Bali. Tenang dan terawat."],
     ["Seputar KEK: kawasan Kura Kura Bali tambah fasilitas publik di Serangan.", "id", "neu", "kek", "anticipation", "blogs", "antara",
       "About the SEZ: Kura Kura Bali adds public facilities in Serangan."]
   ];
@@ -289,10 +296,12 @@ function buildGeneric(project) {
   /* [text with {kw}, lang, sentiment, topic, emotion, source, author, translation] */
   const T = [
     ["{kw} keren banget, pelayanannya ramah dan cepat.", "id", "pos", "g_experience", "joy", "tiktok", "c2", "{kw} is great, friendly and fast service."],
-    ["Just tried {kw} and I'm really impressed with the quality.", "en", "pos", "g_experience", "joy", "x", "p3"],
+    ["Just tried {kw} and I'm really impressed with the quality.", "en", "pos", "g_experience", "joy", "x", "p3",
+      "Baru coba {kw} dan kualitasnya bikin terkesan."],
     ["{kw} raih penghargaan dan terus berkembang tahun ini.", "id", "pos", "g_coverage", "trust", "news", "kompas", "{kw} wins an award and keeps growing this year."],
     ["{kw} umumkan rencana ekspansi ke kota baru.", "id", "neu", "g_coverage", "anticipation", "news", "cnbc", "{kw} announces plans to expand to a new city."],
-    ["What does the latest {kw} announcement mean for the market?", "en", "neu", "g_coverage", "anticipation", "news", "bisnis"],
+    ["What does the latest {kw} announcement mean for the market?", "en", "neu", "g_coverage", "anticipation", "news", "bisnis",
+      "Apa arti pengumuman terbaru {kw} bagi pasar?"],
     ["Kinerja {kw} kuartal ini dibahas analis.", "id", "neu", "g_coverage", "anticipation", "news", "detik", "Analysts discuss {kw}'s performance this quarter."],
     ["Ada yang pernah coba {kw}? Worth it nggak?", "id", "neu", "g_questions", "anticipation", "x", "p1", "Has anyone tried {kw}? Is it worth it?"],
     ["Promo {kw} minggu ini lumayan banget!", "id", "pos", "g_price", "joy", "tiktok", "c1", "This week's {kw} promo is really good!"],
@@ -300,7 +309,8 @@ function buildGeneric(project) {
     ["Customer service {kw} lambat merespons.", "id", "neg", "g_experience", "anger", "x", "p1", "{kw} customer service is slow to respond."],
     ["Event {kw} akhir pekan ini ramai dan seru.", "id", "pos", "g_events", "joy", "youtube", "c3", "This weekend's {kw} event was busy and fun."],
     ["{kw} hadir di pameran bulan depan.", "id", "neu", "g_events", "anticipation", "blogs", "localnews", "{kw} will be at next month's exhibition."],
-    ["Behind the scenes at {kw}: how the team works.", "en", "pos", "g_coverage", "trust", "news", "kumparan"],
+    ["Behind the scenes at {kw}: how the team works.", "en", "pos", "g_coverage", "trust", "news", "kumparan",
+      "Di balik layar {kw}: cara tim bekerja."],
     ["Mampir ke {kw} hari ini, suasananya nyaman.", "id", "pos", "g_experience", "joy", "tiktok", "c1", "Stopped by {kw} today, it felt comfortable."]
   ].filter(x => project.langs.includes(x[1]));
   const kws = project.keywords.filter(k => !k.startsWith("#"));
