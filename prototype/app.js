@@ -246,7 +246,7 @@ V.home = {
 function alertVars(a) { return { topic: a.topic ? t("topic." + a.topic) : "", outlet: a.outlet, author: a.author, f: nf(a.factor || 0, { maximumFractionDigits: 1 }), n: a.count, r: fN(a.reach || 0) }; }
 function alertActs(a) {
   if (a.kind === "negSpike") return [[t("act.reviewMentions"), `#/mentions?topic=${a.topic}&sentiment=neg&status=all`, 1], [t("act.draftStatement"), `#/studio?tpl=statement&alert=${a.id}`]];
-  if (a.kind === "volumeUp") return [[t("act.reviewMentions"), `#/mentions?topic=${a.topic}&status=all`, 1], [t("act.draftPost"), `#/studio?tpl=caption&alert=${a.id}`]];
+  if (a.kind === "volumeUp") return [[t("act.reviewMentions"), `#/mentions?topic=${a.topic}&status=all`, 1], [t("act.draftPost"), `#/studio?tpl=caption&alert=${a.id}`], [t("act.createVisual"), `#/create?alert=${a.id}`]];
   if (a.kind === "influencer") return [[t("act.reviewMentions"), `#/mentions?status=all&search=${encodeURIComponent(a.author.split(" ")[0])}`, 1], [t("act.draftOutreach"), `#/studio?tpl=mediaEmail&alert=${a.id}`]];
   return [[t("act.openCoverage"), `#/mentions?status=all&search=${encodeURIComponent(a.outlet || "")}`, 1], [t("act.dismiss"), `dismiss:${a.id}`]];
 }
@@ -712,7 +712,7 @@ V.studio = {
           <span class="spacer"></span><span class="small muted" id="st-wc">${t("st.words", { n: wc })}</span></div>
         <div class="card-body" id="st-edwrap"><label class="sr-only" for="st-text">${t("st.editor")}</label><textarea id="st-text" class="input editor" lang="${s.lang}" placeholder="${t("st.editorPh")}">${esc(s.text)}</textarea></div>
         <div class="card-foot row wrap"><button class="btn" data-st="copy">${ic("copy")}${t("act.copy")}</button><button class="btn ghost" data-st="clear">${t("st.new")}</button>
-          <span class="spacer"></span>${["caption", "reply"].includes(s.tpl) ? `<button class="btn" data-st="toPlanner">${ic("calendar")}${t("st.toPlanner")}</button>` : ""}
+          <span class="spacer"></span>${s.tpl === "caption" ? `<a class="btn" href="#/create?brief=${encodeURIComponent(s.brief.trim() || defBrief(s.lang, "caption"))}">${ic("image")}${t("st.toVisual")}</a>` : ""}${["caption", "reply"].includes(s.tpl) ? `<button class="btn" data-st="toPlanner">${ic("calendar")}${t("st.toPlanner")}</button>` : ""}
           <button class="btn primary" data-st="save">${ic("check")}${s.draftId ? t("st.updateDraft") : t("st.saveDraft")}</button></div>
       </section>
       <section class="card"><div class="card-head"><h2>${t("st.drafts")}</h2><span class="pill plain">${drafts.length}</span></div>
@@ -841,7 +841,7 @@ V.planner = {
       : emptyState("calendar", t("pl.none"), t("pl.none.b"));
   }
 };
-function composer({ id, date, text } = {}) {
+function composer({ id, date, text, media } = {}) {
   const post = id ? D.posts.find(p => p._id === id) : null;
   if (post && post.kind !== "social") {
     openDrawer({ title: esc(post.summary), body: `<div class="stack"><div class="row wrap"><span class="pill plain">${t("kind." + post.kind)}</span>${statusDot(post.status)}<span class="small muted">${fDT(new Date(post.scheduleDate))}</span></div><p class="ink2">${t("pl.nonSocial")}</p></div>`,
@@ -852,7 +852,9 @@ function composer({ id, date, text } = {}) {
   const sel = new Set(post ? post.accountIds : ["acc_ig"]);
   const d0 = post ? new Date(post.scheduleDate) : date ? new Date(new Date(date).setHours(10, 0, 0, 0)) : new Date(+D.TODAY + 864e5);
   const pad = n => String(n).padStart(2, "0"), localVal = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  let pv = [...sel][0];
+  let pv = [...sel][0], att = post ? post.media || null : media || null;
+  const mediaField = () => att ? `<div class="cr-att">${crFrame(att, { uid: "cp" })}<div style="flex:1;min-width:0"><b class="small">${esc(att.headline)}</b><div class="small muted">${t("cr.kind.image")} · ${att.fmt}</div></div>${editable ? `<button class="btn sm ghost icon" id="cp-rmmedia" aria-label="${t("act.remove")}">${ic("x")}</button>` : ""}</div>`
+    : `<div style="border:1px dashed var(--border-strong);border-radius:10px;padding:14px;text-align:center" class="small muted">${ic("image")} ${t("pl.mediaDrop")}</div>${editable ? `<div class="row"><a class="btn sm ghost" href="#/create">${ic("sparkles")}${t("pl.createWithAI")}</a></div>` : ""}`;
   const draw = () => {
     const txt = $("#cp-text").value, accs = D.accounts.filter(a => sel.has(a._id)), lim = accs.length ? Math.min(...accs.map(a => a.limit)) : 2200;
     const c = $("#cp-count"); c.textContent = t("pl.chars", { n: txt.length, m: lim }); c.classList.toggle("over", txt.length > lim);
@@ -860,7 +862,7 @@ function composer({ id, date, text } = {}) {
     $("#cp-pvtabs").innerHTML = accs.map(a => `<button data-pv="${a._id}" aria-pressed="${a._id === pv}">${t("src." + a.platform)}</button>`).join("");
     const a = D.accounts.find(x => x._id === pv);
     $("#cp-preview").innerHTML = a ? `<div class="preview-card"><div class="ph"><span class="avatar" style="background:var(--accent-soft);color:var(--accent)">KK</span><div><b class="small">${esc(a.name)}</b><div class="small muted">${t("src." + a.platform)} · ${fDT(new Date($("#cp-date").value || d0))}</div></div></div>
-      ${a.platform === "instagram" ? `<div class="img">${ic("image")}&nbsp;${t("pl.mediaPh")}</div>` : ""}<div class="cap">${esc(txt) || `<span class="muted">${t("pl.capPh")}</span>`}</div></div>` : `<p class="small muted">${t("pl.pickChannel")}</p>`;
+      ${att ? `<div class="pv-media">${crFrame(att, { uid: "pv" })}</div>` : a.platform === "instagram" ? `<div class="img">${ic("image")}&nbsp;${t("pl.mediaPh")}</div>` : ""}<div class="cap">${esc(txt) || `<span class="muted">${t("pl.capPh")}</span>`}</div></div>` : `<p class="small muted">${t("pl.pickChannel")}</p>`;
     $$("#cp-pvtabs button").forEach(b => b.onclick = () => { pv = b.dataset.pv; draw(); });
     return { txt, lim };
   };
@@ -873,13 +875,14 @@ function composer({ id, date, text } = {}) {
       <div class="field"><div class="row"><label for="cp-text" class="label">${t("pl.caption")}</label><span class="spacer"></span><span id="cp-count" class="counter" aria-live="polite"></span></div>
         <textarea id="cp-text" class="input" rows="6" ${editable ? "" : "readonly"} placeholder="${t("pl.capPh")}">${esc(post ? post.summary : text || "")}</textarea>
         <div class="row"><a class="btn sm ghost" href="#/studio?tpl=caption">${ic("sparkles")}${t("pl.writeWithStudio")}</a></div></div>
-      <div class="field"><span class="label">${t("pl.media")}</span><div style="border:1px dashed var(--border-strong);border-radius:10px;padding:14px;text-align:center" class="small muted">${ic("image")} ${t("pl.mediaDrop")}</div></div>
+      <div class="field"><span class="label">${t("pl.media")}</span><div id="cp-media" class="stack" style="gap:6px">${mediaField()}</div></div>
       <div class="field"><label for="cp-date">${t("pl.when")}</label><input id="cp-date" type="datetime-local" class="input" value="${localVal(d0)}" ${editable ? "" : "readonly"}><span class="help">${t("pl.tz")}</span></div>
       <div class="field"><span class="label">${t("pl.preview")}</span><div class="seg" id="cp-pvtabs" role="group" style="align-self:flex-start"></div><div id="cp-preview" style="margin-top:8px"></div></div></div>`,
     foot: editable ? `${post ? `<button class="btn ghost danger" id="cp-del">${t("act.delete")}</button>` : ""}<span class="spacer"></span><button class="btn" data-save="draft">${t("pl.saveDraft")}</button><button class="btn primary" data-save="scheduled">${ic("calendar")}${post && post.status === "failed" ? t("pl.retry") : t("pl.schedule")}</button>`
       : `<span class="spacer"></span><button class="btn" data-close="1">${t("act.close")}</button>`,
     mount() {
       $("#cp-text").addEventListener("input", draw); $("#cp-date").addEventListener("input", draw);
+      const bindRm = () => { const rm = $("#cp-rmmedia"); if (rm) rm.onclick = () => { att = null; $("#cp-media").innerHTML = mediaField(); bindRm(); draw(); }; }; bindRm();
       $$("[data-acc]").forEach(b => b.onclick = () => { const k = b.dataset.acc; sel.has(k) ? sel.delete(k) : sel.add(k); b.setAttribute("aria-pressed", sel.has(k)); draw(); });
       draw();
       $$("[data-save]").forEach(b => b.onclick = () => {
@@ -888,9 +891,9 @@ function composer({ id, date, text } = {}) {
         if (!txt.trim()) { $("#cp-text").focus(); return toast(t("pl.v.caption")); }
         if (txt.length > lim) return toast(t("pl.v.long", { m: lim }));
         if (st === "scheduled" && !(dt > D.TODAY)) { $("#cp-date").focus(); return toast(t("pl.v.future")); }
-        const body = { accountIds: [...sel], summary: txt, status: st, scheduleDate: dt.toISOString(), type: "post" };
+        const body = { accountIds: [...sel], summary: txt, status: st, scheduleDate: dt.toISOString(), type: "post", media: att };
         if (post) { delete post.error; ghl.updatePost(post._id, body); } else ghl.createPost(body);
-        S.pl.month = new Date(dt.getFullYear(), dt.getMonth(), 1); S.pl.prefill = null;
+        S.pl.month = new Date(dt.getFullYear(), dt.getMonth(), 1); S.pl.prefill = null; S.pl.prefillMedia = null;
         closeDrawer(); rerender(); toast(t("toast.postSaved", { s: t("pst." + st) }));
       });
       const del = $("#cp-del"); if (del) del.onclick = () => confirmBox(t("pl.delT"), t("pl.delB"), t("act.delete"), () => { D.posts.splice(D.posts.indexOf(post), 1); closeDrawer(); rerender(); toast(t("toast.postDeleted")); }, true);
@@ -1290,11 +1293,225 @@ function openProject(id) {
   if (!same) toast(t("toast.switched", { n: esc(D.project.name) }));
 }
 
+/* ================================================================ AI CONTENT (images) */
+/* Prototype: visuals are drawn as SVG scenes from the brief, so the flow can be clicked through
+   without an image model. Production sends the same brief + brand kit to an image model
+   and keeps these brand checks on the result. */
+const CR_FMT = ["4:5", "1:1", "9:16", "16:9"];
+const CR_STYLES = ["photo", "editorial", "illustration", "graphic"];
+S.cr = { fmt: "4:5", style: "photo", lang: null, brief: "", headline: "", logo: true, text: true, library: true, ctx: null, results: [], sel: 0, busy: false, seed: 7, lib: [] };
+const CR_PAL = [
+  { sky: ["#f3c98f", "#f6e7cc"], sun: "#f7b45c", sea: ["#4a9a93", "#285f5b"], land: "#2b512b", sand: "#e9dcc0", far: "#6f8f6a" },
+  { sky: ["#bcdbe0", "#f2ecdb"], sun: "#fff3d1", sea: ["#62adab", "#2f7a7d"], land: "#3d6b3a", sand: "#efe5cf", far: "#8fb08a" },
+  { sky: ["#2e3d5c", "#e08f68"], sun: "#f7c67c", sea: ["#2f5568", "#1a3140"], land: "#15281a", sand: "#b99c7a", far: "#3d4c4a" },
+  { sky: ["#acc29b", "#f2ecdb"], sun: "#f2ecdb", sea: ["#78aaa5", "#3b6e6a"], land: "#2b512b", sand: "#e6dcc4", far: "#7f9c74" }
+];
+const CR_HL = {
+  en: {
+    fashion: ["Fashion Week, by the sea", "Labdanation Fashion Week recap", "Style meets the coast", "Front row on Serangan"],
+    outlet: ["Sira Village Grand Outlet", "Shop the coast", "Your weekend at Sira Village", "Retail, island style"],
+    turtle: ["Home of the turtles", "Protecting Serangan's coast", "Every hatchling counts", "Kura Kura means turtle"],
+    campus: ["Learn and grow on Serangan", "Bali's new economic zone", "Built for what's next", "Where business meets the coast"],
+    coast: ["Where the coast comes alive", "Slow mornings on Serangan", "See you at Kura Kura Bali", "A new coastal destination"]
+  },
+  id: {
+    fashion: ["Fashion week di tepi laut", "Rangkuman Labdanation Fashion Week", "Gaya bertemu pesisir", "Barisan depan di Serangan"],
+    outlet: ["Sira Village Grand Outlet", "Belanja di tepi pantai", "Akhir pekan di Sira Village", "Belanja ala pulau"],
+    turtle: ["Rumah para penyu", "Menjaga pesisir Serangan", "Setiap tukik berarti", "Kura Kura artinya penyu"],
+    campus: ["Belajar dan tumbuh di Serangan", "Kawasan ekonomi baru Bali", "Dibangun untuk masa depan", "Bisnis bertemu pesisir"],
+    coast: ["Pesisir yang hidup", "Pagi santai di Serangan", "Sampai jumpa di Kura Kura Bali", "Destinasi pesisir baru"]
+  }
+};
+const crLang = () => S.cr.lang || S.lang;
+const crSubject = b => { b = (b || "").toLowerCase();
+  if (/fashion|fesyen|runway|labdanation|model/.test(b)) return "fashion";
+  if (/outlet|shop|belanja|retail|award|penghargaan|store|toko/.test(b)) return "outlet";
+  if (/turtle|penyu|tukik|conserv|konservasi|mangrove|clean|pantai bersih/.test(b)) return "turtle";
+  if (/school|sekolah|invest|kek|sez|business|bisnis|campus|kampus/.test(b)) return "campus";
+  return "coast"; };
+const crRatio = f => { const [w, h] = f.split(":").map(Number); return h / w; };
+function crRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let x = Math.imul(a ^ (a >>> 15), 1 | a); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; }
+
+/* One SVG scene. Coordinates are in a 1000-wide box; height follows the format. */
+function crArt(r, subjectOverride, uid) {
+  const W = 1000, H = Math.round(W * crRatio(r.fmt)), R = crRand(r.seed), id = "cr" + (uid || r.id);
+  const subject = subjectOverride || r.subject, st = r.style;
+  let p = CR_PAL[r.variant % 4];
+  if (st === "editorial") p = { sky: ["#2b512b", "#3f6b3c"], sun: "#f2ecdb", sea: ["#acc29b", "#7f9c74"], land: "#16301a", sand: "#cfcabe", far: "#5b7d55" };
+  const flat = st === "illustration" || st === "editorial";
+  const g2 = (k, a) => flat ? a[0] : `url(#${id}-${k})`;
+  const hz = H * (0.5 + R() * 0.08);
+  const defs = `<defs><linearGradient id="${id}-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p.sky[0]}"/><stop offset="1" stop-color="${p.sky[1]}"/></linearGradient>
+    <linearGradient id="${id}-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p.sea[0]}"/><stop offset="1" stop-color="${p.sea[1]}"/></linearGradient>
+    <radialGradient id="${id}-glow"><stop offset="0" stop-color="${p.sun}" stop-opacity=".55"/><stop offset="1" stop-color="${p.sun}" stop-opacity="0"/></radialGradient>
+    <filter id="${id}-grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .5 0"/></filter></defs>`;
+  if (st === "graphic") {
+    const bg = ["#2b512b", "#f2ecdb", "#acc29b", "#cfcabe"][r.variant % 4], fg = r.variant % 4 === 0 ? "#3d6b3a" : "#2b512b";
+    let cells = "";
+    for (let i = 0; i < 7; i++) { const cx = 120 + R() * 760, cy = H * (0.1 + R() * 0.55), s = 60 + R() * 160; cells += `<path d="M${cx} ${cy - s}l${s * .8} ${s * .45}v${s * .9}l-${s * .8} ${s * .45}l-${s * .8}-${s * .45}v-${s * .9}z" fill="${fg}" opacity="${0.08 + R() * 0.14}"/>`; }
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${defs}<rect width="${W}" height="${H}" fill="${bg}"/>${cells}
+      <circle cx="${W * (0.62 + R() * 0.2)}" cy="${H * 0.3}" r="${W * 0.26}" fill="${fg}" opacity=".18"/></svg>`;
+  }
+  const sunX = W * (0.2 + R() * 0.6), sunY = hz - H * (0.08 + R() * 0.14);
+  let s = `<rect width="${W}" height="${H}" fill="${g2("sky", p.sky)}"/>`;
+  if (!flat) s += `<circle cx="${sunX}" cy="${sunY}" r="${W * 0.32}" fill="url(#${id}-glow)"/>`;
+  s += `<circle cx="${sunX}" cy="${sunY}" r="${W * 0.07}" fill="${p.sun}"/>`;
+  for (let i = 0; i < 3; i++) { const y = H * (0.12 + R() * 0.2), x = R() * W; s += `<ellipse cx="${x}" cy="${y}" rx="${80 + R() * 90}" ry="${14 + R() * 10}" fill="#fff" opacity="${flat ? 0.5 : 0.35}"/>`; }
+  s += `<path d="M0 ${hz} Q ${W * 0.2} ${hz - 40 - R() * 30} ${W * 0.38} ${hz - 6} T ${W * 0.7} ${hz - 4} T ${W} ${hz - 22} V ${hz} Z" fill="${p.far}"/>`;
+  s += `<rect y="${hz}" width="${W}" height="${H - hz}" fill="${g2("sea", p.sea)}"/>`;
+  for (let i = 0; i < 6; i++) { const y = hz + (H - hz) * (0.08 + i * 0.1), x = R() * W * 0.7; s += `<path d="M${x} ${y} q 30 -8 60 0 t 60 0" stroke="#fff" stroke-width="3" fill="none" opacity="${0.25 - i * 0.02}"/>`; }
+  const ground = H * (0.78 + R() * 0.06);
+  const palm = (x, y, k) => { let leaves = ""; for (let i = 0; i < 6; i++) { const a = -150 + i * 40 + R() * 10, rad = a * Math.PI / 180, lx = x + Math.cos(rad) * 130 * k, ly = y - 260 * k + Math.sin(rad) * 70 * k; leaves += `<path d="M${x} ${y - 260 * k} Q ${(x + lx) / 2} ${ly - 50 * k} ${lx} ${ly + 30 * k}" stroke="${p.land}" stroke-width="${16 * k}" fill="none" stroke-linecap="round"/>`; }
+    return `<path d="M${x} ${y} Q ${x + 30 * k} ${y - 140 * k} ${x} ${y - 260 * k}" stroke="${p.land}" stroke-width="${14 * k}" fill="none" stroke-linecap="round"/>${leaves}`; };
+  s += `<path d="M0 ${ground} Q ${W * 0.5} ${ground - 40} ${W} ${ground + 10} V ${H} H 0 Z" fill="${p.sand}"/>`;
+  if (subject === "turtle") {
+    const cx = W * (0.35 + R() * 0.3), cy = ground + (H - ground) * 0.45, k = 1.1;
+    s += `<ellipse cx="${cx}" cy="${cy + 26}" rx="${150 * k}" ry="${30 * k}" fill="#000" opacity=".12"/>
+      <ellipse cx="${cx - 150 * k}" cy="${cy}" rx="${42 * k}" ry="${30 * k}" fill="${p.land}"/>
+      <ellipse cx="${cx - 70 * k}" cy="${cy + 30 * k}" rx="${46 * k}" ry="${16 * k}" fill="${p.land}" transform="rotate(-20 ${cx - 70 * k} ${cy + 30 * k})"/>
+      <ellipse cx="${cx + 80 * k}" cy="${cy + 30 * k}" rx="${46 * k}" ry="${16 * k}" fill="${p.land}" transform="rotate(20 ${cx + 80 * k} ${cy + 30 * k})"/>
+      <ellipse cx="${cx}" cy="${cy}" rx="${120 * k}" ry="${70 * k}" fill="${p.land}"/>
+      <path d="M${cx - 60 * k} ${cy - 40 * k} l40 30 l40 -30 M${cx - 20 * k} ${cy - 10 * k} v50 M${cx + 20 * k} ${cy - 10 * k} v50 M${cx - 90 * k} ${cy + 10 * k} h70 M${cx + 20 * k} ${cy + 10 * k} h70" stroke="${p.sand}" stroke-width="9" fill="none" opacity=".9"/>`;
+    s += palm(W * 0.9, ground + 10, 0.9);
+  } else if (subject === "outlet") {
+    const bx = W * 0.12, bw = W * 0.76, bh = H * 0.2, by = ground - bh + 20;
+    s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="8" fill="#f6f1e4"/><rect x="${bx}" y="${by}" width="${bw}" height="${bh * 0.16}" fill="${p.land}"/>`;
+    for (let i = 0; i < 6; i++) { const ax = bx + 20 + i * (bw - 40) / 6, aw = (bw - 40) / 6 - 16; s += `<path d="M${ax} ${by + bh} V ${by + bh * 0.45} a ${aw / 2} ${aw / 2} 0 0 1 ${aw} 0 V ${by + bh} Z" fill="${p.sea[1]}" opacity=".75"/>`; }
+    s += palm(W * 0.08, ground + 30, 1) + palm(W * 0.94, ground + 24, 0.9);
+    for (let i = 0; i < 5; i++) { const x = W * (0.2 + R() * 0.6), y = ground + 40 + R() * 60; s += `<circle cx="${x}" cy="${y - 52}" r="12" fill="${p.land}"/><path d="M${x - 16} ${y} q 16 -60 32 0 z" fill="${p.land}"/>`; }
+  } else if (subject === "fashion") {
+    s += `<path d="M${W * 0.42} ${ground - 10} L ${W * 0.58} ${ground - 10} L ${W * 0.82} ${H} L ${W * 0.18} ${H} Z" fill="#f6f1e4"/>`;
+    for (let i = 0; i < 5; i++) { const x = W * (0.1 + i * 0.2); s += `<circle cx="${x}" cy="${H * 0.16}" r="10" fill="${p.sun}"/><path d="M${x} ${H * 0.16} L ${x - 60} ${ground} L ${x + 60} ${ground} Z" fill="${p.sun}" opacity=".12"/>`; }
+    const fx = W * 0.5, fy = ground + 40;
+    s += `<g transform="translate(${fx} ${fy}) scale(1.7) translate(${-fx} ${-fy})"><circle cx="${fx}" cy="${fy - 210}" r="24" fill="${p.land}"/><path d="M${fx - 18} ${fy - 182} h36 l46 170 h-128 z" fill="${p.land}"/><path d="M${fx - 14} ${fy - 12} l-6 40 M${fx + 14} ${fy - 12} l6 40" stroke="${p.land}" stroke-width="10"/></g>`;
+    for (let i = 0; i < 9; i++) { const x = W * (0.04 + R() * 0.92), side = x < W / 2; if (Math.abs(x - W / 2) < W * 0.2) continue; s += `<circle cx="${x}" cy="${H - 70 - R() * 40}" r="16" fill="#000" opacity=".35"/>`; }
+  } else if (subject === "campus") {
+    const bx = W * 0.2, bw = W * 0.6, bh = H * 0.3, by = ground - bh + 16;
+    s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="#e9eef0"/>`;
+    for (let r2 = 0; r2 < 4; r2++) for (let c = 0; c < 8; c++) s += `<rect x="${bx + 14 + c * (bw - 28) / 8}" y="${by + 14 + r2 * (bh - 28) / 4}" width="${(bw - 28) / 8 - 8}" height="${(bh - 28) / 4 - 8}" fill="${p.sea[0]}" opacity="${0.45 + R() * 0.4}"/>`;
+    s += `<rect x="${bx - 20}" y="${by - 18}" width="${bw + 40}" height="18" fill="${p.land}"/>` + palm(W * 0.1, ground + 30, 0.9) + palm(W * 0.9, ground + 30, 1);
+  } else {
+    s += palm(W * (0.12 + R() * 0.1), ground + 20, 1.1) + palm(W * (0.78 + R() * 0.1), ground + 30, 0.9);
+    s += `<path d="M${W * 0.45} ${ground + 60} l 90 -6 l -10 16 l -70 4 z" fill="${p.land}" opacity=".8"/>`;
+  }
+  if (!flat) s += `<rect width="${W}" height="${H}" filter="url(#${id}-grain)" opacity=".18"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${defs}${s}</svg>`;
+}
+/* Frame = scene + brand overlay (headline + logo) as HTML, so text uses the brand font. */
+function crFrame(r, { big = false, uid = "" } = {}) {
+  const light = r.style !== "graphic" || r.variant % 4 === 0;
+  return `<div class="cr-frame ${big ? "big" : ""}" style="aspect-ratio:${r.fmt.replace(":", "/")}" role="img" aria-label="${esc(r.headline || t("cr.visual"))}">
+    ${crArt(r, null, r.id + uid)}${r.text && r.headline ? `<div class="cr-ov ${light ? "light" : "dark"}">${light ? '<i class="cr-scrim"></i>' : ""}<b class="cr-hl">${esc(r.headline)}</b></div>` : ""}${r.logo ? `<img class="cr-logo ${light ? "white" : ""}" src="assets/kkb-logo.png" alt="">` : ""}</div>`;
+}
+function crGenerate(fromSel) {
+  const c = S.cr, L = crLang(), brief = c.brief.trim() || t("cr.defBrief"), subject = crSubject(brief), hs = CR_HL[L][subject];
+  const base = fromSel ? c.results[c.sel] : null, n = 4;
+  c.seed += 13;
+  c.results = Array.from({ length: n }, (_, i) => ({
+    id: "c" + c.seed + "_" + i, fmt: c.fmt, style: c.style, subject, logo: c.logo, text: c.text, library: c.library,
+    variant: base ? base.variant : (i + (c.seed % 4)) % 4, seed: c.seed * 31 + i * 7,
+    headline: c.headline.trim() || (base ? base.headline : hs[i % 4]), brief, lang: L
+  }));
+  c.sel = 0;
+}
+function crChecks(r) {
+  const out = [], low = r.headline.toLowerCase(), ban = D.settings.banned.filter(b => low.includes(b.toLowerCase()));
+  out.push(r.logo ? { lv: "ok", t: t("cr.chk.logo"), d: t("cr.chk.logo.ok") } : { lv: "warn", t: t("cr.chk.logo"), d: t("cr.chk.logo.off") });
+  out.push({ lv: ban.length ? "bad" : "ok", t: t("chk.claims"), d: ban.length ? t("chk.claims.bad", { w: ban.map(b => `“${b}”`).join(", ") }) : t("chk.claims.ok") });
+  out.push(r.text && r.headline.length > 34 ? { lv: "warn", t: t("cr.chk.text"), d: t("cr.chk.text.long", { n: r.headline.length }) } : { lv: "ok", t: t("cr.chk.text"), d: t("cr.chk.text.ok") });
+  out.push(r.style !== "graphic" && r.variant % 4 === 2 ? { lv: "warn", t: t("cr.chk.colour"), d: t("cr.chk.colour.dusk") } : { lv: "ok", t: t("cr.chk.colour"), d: t("cr.chk.colour.ok") });
+  out.push({ lv: "ok", t: t("cr.chk.fit"), d: t("cr.fit." + r.fmt.replace(":", "x")) });
+  out.push(r.library ? { lv: "ok", t: t("cr.chk.source"), d: t("cr.chk.source.lib") } : { lv: "warn", t: t("cr.chk.source"), d: t("cr.chk.source.gen") });
+  if (r.style === "photo") out.push({ lv: "ok", t: t("cr.chk.ai"), d: t("cr.chk.ai.d") });
+  const score = Math.max(0, 100 - out.filter(c => c.lv === "bad").length * 25 - out.filter(c => c.lv === "warn").length * 10);
+  return { out, score };
+}
+function crChecksHTML() {
+  const r = S.cr.results[S.cr.sel];
+  if (!r) return `<p class="small muted">${t("cr.chk.empty")}</p>`;
+  const { out, score } = crChecks(r), col = score >= 85 ? "--good" : score >= 60 ? "--serious" : "--critical", circ = 2 * Math.PI * 22;
+  return `<div class="score" style="margin-bottom:6px"><svg class="ring" viewBox="0 0 56 56" role="img" aria-label="${t("chk.score")}: ${score}/100"><circle cx="28" cy="28" r="22" fill="none" stroke="var(--surface-3)" stroke-width="6"/>
+    <circle cx="28" cy="28" r="22" fill="none" stroke="var(${col})" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(circ * score) / 100} ${circ}" transform="rotate(-90 28 28)"/>
+    <text x="28" y="33" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">${score}</text></svg>
+    <div><b>${score >= 85 ? t("chk.ready") : score >= 60 ? t("chk.almost") : t("chk.needsWork")}</b><p class="small muted">${t("cr.chk.scoreH")}</p></div></div>` +
+    out.map(c => `<div class="check ${c.lv}"><span class="ic">${ic(c.lv === "ok" ? "check" : c.lv === "warn" ? "alertc" : "alert")}</span><div><b>${c.t}</b><p>${esc(c.d)}</p></div></div>`).join("");
+}
+const crToggle = (k, l) => `<label class="cr-tg"><input type="checkbox" data-crt="${k}" ${S.cr[k] ? "checked" : ""}> ${l}</label>`;
+V.create = {
+  html() {
+    const c = S.cr, L = crLang(), r = c.results[c.sel], busy = c.busy, n = 4;
+    const grid = busy ? `<div class="cr-grid" aria-busy="true">${Array.from({ length: n }, () => `<div class="cr-frame skel" style="aspect-ratio:${c.fmt.replace(":", "/")}"></div>`).join("")}</div><p class="small muted" style="margin-top:10px">${ic("sparkles")} ${t("cr.generating")}</p>`
+      : c.results.length ? `<div class="cr-grid">${c.results.map((x, i) => `<button class="cr-item" data-cr="sel:${i}" aria-pressed="${i === c.sel}" aria-label="${t("cr.option", { n: i + 1 })}">${crFrame(x)}</button>`).join("")}</div>`
+      : emptyState("image", t("cr.none"), t("cr.none.b"));
+    const detail = !busy && r ? `<section class="card"><div class="card-head"><h2>${t("cr.selected", { n: c.sel + 1 })}</h2><span class="pill plain">${r.fmt} · ${t("cr.style." + r.style)}</span></div>
+      <div class="card-body"><div class="cr-detail"><div class="cr-player">${crFrame(r, { big: true, uid: "p" })}</div><div class="stack" style="gap:12px">
+        <div class="field"><label for="cr-hl">${t("cr.headline")}</label><input id="cr-hl" class="input" value="${esc(r.headline)}" maxlength="60"><span class="help">${t("cr.headline.h")}</span></div>
+        <div class="row wrap" style="gap:6px">
+          <button class="btn primary" data-cr="planner">${ic("calendar")}${t("cr.toPlanner")}</button>
+          <a class="btn" href="#/studio?tpl=caption&brief=${encodeURIComponent(r.brief)}">${ic("pen")}${t("cr.writeCaption")}</a>
+          <button class="btn" data-cr="more">${ic("refresh")}${t("cr.more")}</button>
+          <button class="btn" data-cr="save">${ic("check")}${t("cr.save")}</button>
+          <button class="btn ghost" data-cr="download">${ic("download")}PNG</button></div>
+      </div></div></div></section>` : "";
+    return head(t("nav.create"), t("create.desc")) + `<div class="studio"><div class="stack">
+      ${c.ctx ? `<section class="card"><div class="card-body row" style="align-items:flex-start">${ic("link")}<div style="flex:1;min-width:0"><b class="small">${t("cr.context")}</b><p class="small ink2" style="margin-top:2px">${esc(c.ctx)}</p></div><button class="btn sm ghost" data-cr="clearctx">${t("act.remove")}</button></div></section>` : ""}
+      <section class="card"><div class="card-body stack" style="gap:14px">
+        <div class="row wrap" style="gap:14px;align-items:flex-end">
+          <div class="field"><span class="label">${t("cr.format")}</span><div class="seg" role="group" aria-label="${t("cr.format")}">${CR_FMT.map(f => `<button data-cr="fmt:${f}" aria-pressed="${c.fmt === f}" title="${esc(t("cr.fit." + f.replace(":", "x")))}">${f}</button>`).join("")}</div></div>
+          <div class="field"><span class="label">${t("st.outLang")}</span><div class="seg" role="group" aria-label="${t("st.outLang")}">${["en", "id"].map(k => `<button data-cr="lang:${k}" aria-pressed="${L === k}">${k === "en" ? "English" : "Indonesia"}</button>`).join("")}</div></div>
+        </div>
+        <div class="field"><span class="label">${t("cr.style")}</span><div class="row wrap" style="gap:6px">${CR_STYLES.map(k => `<button class="chip" data-cr="style:${k}" aria-pressed="${c.style === k}">${t("cr.style." + k)}</button>`).join("")}</div></div>
+        <div class="row" style="align-items:flex-end;gap:8px"><div class="field" style="flex:1"><label for="cr-brief">${t("cr.brief")}</label>
+          <input id="cr-brief" class="input" value="${esc(c.brief)}" placeholder="${esc(t("cr.defBrief"))}"></div>
+          <button class="btn primary" data-cr="gen" ${busy ? "disabled" : ""}>${ic("sparkles")}${c.results.length ? t("cr.regen") : t("cr.gen")}</button></div>
+        <div class="row wrap" style="gap:16px">${crToggle("logo", t("cr.opt.logo"))}${crToggle("text", t("cr.opt.text"))}${crToggle("library", t("cr.opt.library"))}</div>
+      </div></section>
+      <section class="card"><div class="card-head"><h2>${t("cr.results")}</h2>${c.results.length && !busy ? `<span class="pill plain">${c.results.length}</span>` : ""}<span class="spacer"></span><span class="small muted">${t("cr.demoNote")}</span></div><div class="card-body" style="margin-top:8px">${grid}</div></section>
+      ${detail}
+    </div>
+    <aside class="stack" style="position:sticky;top:76px">
+      <section class="card"><div class="card-head"><h2>${t("cr.checks")}</h2>${infoBtn(t("cr.checks.i"))}</div><div class="card-body" id="cr-checks">${busy ? "" : crChecksHTML()}</div></section>
+      <section class="card"><div class="card-head"><h2>${t("cr.kit")}</h2></div><div class="card-body stack" style="gap:10px">
+        <div class="row"><span class="cr-kitlogo"><img src="assets/kkb-logo.png" alt="Kura Kura Bali logo"></span><div class="small"><b>${t("cr.kit.logo")}</b><div class="muted">${t("cr.kit.logo.d")}</div></div></div>
+        <div><div class="small" style="margin-bottom:6px"><b>${t("cr.kit.colours")}</b></div><div class="row" style="gap:6px">${["#2b512b", "#acc29b", "#cfcabe", "#f2ecdb", "#111111"].map(h => `<span class="cr-sw" style="background:${h}" title="${h}"></span>`).join("")}</div></div>
+        <div class="small"><b>${t("cr.kit.font")}</b><div class="muted">Plus Jakarta Sans</div></div>
+        <div class="small"><b>${t("cr.kit.photos")}</b><div class="muted">${t("cr.kit.photos.d")}</div></div></div></section>
+      <section class="card"><div class="card-head"><h2>${t("cr.recent")}</h2>${c.lib.length ? `<span class="pill plain">${c.lib.length}</span>` : ""}</div><div class="card-body">
+        ${c.lib.length ? `<div class="cr-lib">${c.lib.map((x, i) => `<button class="cr-item" data-cr="lib:${i}" aria-label="${esc(x.headline)}">${crFrame(Object.assign({}, x, { fmt: "1:1" }), { uid: "l" })}</button>`).join("")}</div>` : `<p class="small muted">${t("cr.recent.none")}</p>`}</div></section>
+    </aside></div>`;
+  },
+  mount() {
+    const b = $("#cr-brief"); if (b) b.addEventListener("input", e => { S.cr.brief = e.target.value; });
+    const h = $("#cr-hl"); if (h) h.addEventListener("input", e => {
+      const r = S.cr.results[S.cr.sel]; r.headline = e.target.value;
+      $$(".cr-item[aria-pressed=true] .cr-hl, .cr-player .cr-hl").forEach(x => (x.textContent = r.headline)); $("#cr-checks").innerHTML = crChecksHTML(); });
+    $$("[data-crt]").forEach(x => x.onchange = () => { S.cr[x.dataset.crt] = x.checked; S.cr.results.forEach(r => { if (x.dataset.crt in r) r[x.dataset.crt] = x.checked; }); rerender(); });
+  }
+};
+function crAction(a) {
+  const c = S.cr, [k, v] = a.split(/:(.*)/s), r = c.results[c.sel];
+  if (k === "fmt" || k === "style") { c[k] = v; return rerender(); }
+  if (k === "lang") { c.lang = v; return rerender(); }
+  if (k === "sel") { c.sel = +v; return rerender(); }
+  if (k === "clearctx") { c.ctx = null; return rerender(); }
+  if (k === "gen" || k === "more") {
+    if (k === "gen") c.headline = "";
+    c.busy = true; rerender();
+    setTimeout(() => { crGenerate(k === "more"); c.busy = false; rerender(); toast(t("cr.toast.ready")); }, 1300);
+    return;
+  }
+  if (!r) return;
+  if (k === "save") { if (!c.lib.find(x => x.id === r.id)) c.lib.unshift(Object.assign({}, r)); c.lib = c.lib.slice(0, 9); rerender(); return toast(t("cr.toast.saved")); }
+  if (k === "lib") { const x = c.lib[+v]; c.results = [Object.assign({}, x)]; c.sel = 0; c.fmt = x.fmt; return rerender(); }
+  if (k === "download") return toast(t("toast.demoDownload"));
+  if (k === "planner") { if (!c.lib.find(x => x.id === r.id)) c.lib.unshift(Object.assign({}, r)); S.pl.prefill = S.pl.prefill || ""; S.pl.prefillMedia = Object.assign({}, r); location.hash = "#/planner?compose=1"; }
+}
+
 /* ================================================================ SHELL */
 const NAV = [
   [null, [["home", "home"]]],
   ["analytics", [["mentions", "inbox"], ["insights", "chart"], ["benchmark", "bars"], ["value", "coins"], ["reports", "file"]]],
-  ["content", [["studio", "pen"], ["planner", "calendar"]]]
+  ["content", [["studio", "pen"], ["create", "image"], ["planner", "calendar"]]]
 ];
 function navCounts() {
   return { mentions: [D.mentions.filter(m => !isVisited(m) && m.date > new Date(+D.TODAY - 7 * 864e5)).length], alerts: [D.alerts.filter(a => a.state === "open").length, true] };
@@ -1333,7 +1550,14 @@ function applyQuery() {
     if (q.alert) { const a = D.alerts.find(x => x.id === q.alert); if (a) { S.st.ctx = { kind: "alert", text: alertTitle(a) + ". " + alertBody(a), topic: a.topic }; S.st.brief = t("st.briefFromAlert." + (a.topic && I.en["st.briefFromAlert." + a.topic] ? a.topic : "general")); S.st.text = ""; } }
   }
   if (S.route === "planner" && q.post) { const p = D.posts.find(x => x._id === q.post); if (p) { const d = new Date(p.scheduleDate); S.pl.month = new Date(d.getFullYear(), d.getMonth(), 1); setTimeout(() => composer({ id: p._id }), 50); } }
-  if (S.route === "planner" && q.compose) setTimeout(() => composer({ text: S.pl.prefill || "" }), 50);
+  if (S.route === "planner" && q.compose) setTimeout(() => composer({ text: S.pl.prefill || "", media: S.pl.prefillMedia || null }), 50);
+  if (S.route === "studio" && q.brief) { S.st.brief = q.brief; S.st.text = ""; }
+  if (S.route === "create") {
+    const c = S.cr;
+    if (q.brief) { c.brief = q.brief; c.ctx = null; c.results = []; c.headline = ""; }
+    if (q.alert) { const a = D.alerts.find(x => x.id === q.alert); if (a) { c.ctx = alertTitle(a) + ". " + alertBody(a); c.brief = t("st.briefFromAlert." + (a.topic && I.en["st.briefFromAlert." + a.topic] ? a.topic : "general")); c.results = []; c.headline = ""; } }
+    if (q.mention) { const m = D.mentions.find(x => x.id === q.mention); if (m) { c.ctx = `“${m.text}” · ${m.author.name}`; c.brief = (I[S.lang]["topic." + m.topic] || m.topic); c.results = []; c.headline = ""; } }
+  }
   if (S.route === "new-project" && NP.mode === "edit") NP.reset();
   if (S.route === "project-settings") { const p = PROJ.get(q.id || D.project.id); if (p) NP.load(p); }
 }
@@ -1376,12 +1600,13 @@ function closeSide() { $("#side").classList.remove("on"); if (!$("#drawer").clas
 
 const pal = { items: [], i: 0 };
 function palItems(q) {
-  const nav = ["home", "mentions", "insights", "benchmark", "value", "alerts", "studio", "planner", "reports", "projects", "project-settings", "new-project"].concat(isAdmin() ? ["workspace"] : []).map(k => ({ l: t("nav." + k), k: t("pal.goTo"), run: () => (location.hash = "#/" + k) }))
+  const nav = ["home", "mentions", "insights", "benchmark", "value", "alerts", "studio", "create", "planner", "reports", "projects", "project-settings", "new-project"].concat(isAdmin() ? ["workspace"] : []).map(k => ({ l: t("nav." + k), k: t("pal.goTo"), run: () => (location.hash = "#/" + k) }))
     .concat(PROJ.all().filter(p => p.id !== D.project.id).map(p => ({ l: t("proj.switchTo", { n: p.name }), k: t("pal.action"), run: () => openProject(p.id) })));
   const acts = [
     { l: t("ai.ask"), k: t("pal.action"), run: () => openAsk() },
     { l: t("pl.newPost"), k: t("pal.action"), run: () => { location.hash = "#/planner"; setTimeout(() => composer(), 80); } },
     { l: t("act.newDraft"), k: t("pal.action"), run: () => (location.hash = "#/studio?tpl=statement") },
+    { l: t("act.createVisual"), k: t("pal.action"), run: () => (location.hash = "#/create") },
     { l: t("pal.negMentions"), k: t("pal.action"), run: () => (location.hash = "#/mentions?sentiment=neg&status=all") },
     { l: S.lang === "en" ? "Ganti ke Bahasa Indonesia" : "Switch to English", k: t("pal.action"), run: () => setLang(S.lang === "en" ? "id" : "en") },
     { l: isDark() ? t("theme.light") : t("theme.dark"), k: t("pal.action"), run: toggleTheme },
@@ -1474,6 +1699,7 @@ document.addEventListener("click", e => {
   if (d.tone) { S.st.tone = d.tone; $$("[data-tone]").forEach(b => b.setAttribute("aria-pressed", b.dataset.tone === d.tone)); return; }
   if (d.olang) { S.st.lang = d.olang; rerender(); return; }
   if (d.st) { studioAction(d.st); return; }
+  if (d.cr) { crAction(d.cr); return; }
   if (d.deldraft) { const i = D.drafts.findIndex(x => x.id === d.deldraft), dr = D.drafts.splice(i, 1)[0]; if (S.st.draftId === dr.id) S.st.draftId = null; rerender();
     toast(t("toast.draftDeleted"), { label: t("act.undo"), fn: () => { D.drafts.splice(i, 0, dr); rerender(); } }); return; }
   if (el.closest("tr[data-draft]")) { const dr = D.drafts.find(x => x.id === el.closest("tr[data-draft]").dataset.draft);
